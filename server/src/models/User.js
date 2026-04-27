@@ -9,6 +9,19 @@ const userSchema = new mongoose.Schema({
     type: String, 
     enum: ['volunteer', 'ngo_admin', 'coordinator', 'super_admin'],
     default: 'volunteer'
+  },
+  status: { 
+    type: String, 
+    enum: ['active', 'pending', 'suspended', 'deleted'], 
+    default: 'active' 
+  },
+  isDeleted: { type: Boolean, default: false },
+  profile: {
+    skills: [{ type: String }],
+    location: { lat: Number, lng: Number },
+    availability: { type: Boolean, default: true },
+    completedCount: { type: Number, default: 0 },
+    assignedNgoId: { type: mongoose.Schema.Types.ObjectId, ref: 'NGO' }
   }
 }, { timestamps: true });
 

@@ -1,61 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { Bell, CheckCheck, AlertCircle, UserCheck, ClipboardCheck } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { getAssignments, getNeeds } from "@/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "@/api";
+import { toast } from "sonner";
 
 interface Notification {
-  id: string;
-  type: "assignment" | "need" | "completion";
+  _id: string;
+  type: "assignment_created" | "status_updated" | "system_alert";
   title: string;
   message: string;
-  time: string;
-  read: boolean;
-}
-
-function buildNotifications(assignments: any[], needs: any[]): Notification[] {
-  const notes: Notification[] = [];
-
-  // Notifications from recent assignments
-  const recentAssignments = [...assignments]
-    .sort((a, b) => new Date(b.assignedAt || b.createdAt).getTime() - new Date(a.assignedAt || a.createdAt).getTime())
-    .slice(0, 5);
-
-  recentAssignments.forEach(a => {
-    if (a.status === "active") {
-      notes.push({
-        id: `assign-${a._id}`,
-        type: "assignment",
-        title: "Volunteer Assigned",
-        message: `${a.volunteerId?.userId?.name || "A volunteer"} assigned to "${a.needId?.title || "a need"}"`,
-        time: a.assignedAt || a.createdAt,
-        read: false,
-      });
-    } else if (a.status === "completed") {
-      notes.push({
-        id: `complete-${a._id}`,
-        type: "completion",
-        title: "Assignment Completed",
-        message: `"${a.needId?.title || "A need"}" has been resolved ✓`,
-        time: a.completedAt || a.updatedAt,
-        read: false,
-      });
-    }
-  });
-
-  // High-urgency open needs (urgency 5) as alerts
-  const criticalNeeds = needs.filter(n => n.urgency === 5 && n.status === "open").slice(0, 3);
-  criticalNeeds.forEach(n => {
-    notes.push({
-      id: `urgent-${n._id}`,
-      type: "need",
-      title: "🔴 Critical Need Unassigned",
-      message: `"${n.title}" affects ${n.peopleAffected} people`,
-      time: n.createdAt,
-      read: false,
-    });
-  });
-
-  return notes.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8);
+  createdAt: string;
+  isRead: boolean;
 }
 
 function timeAgo(dateStr: string) {
@@ -69,21 +24,24 @@ function timeAgo(dateStr: string) {
 }
 
 function NotifIcon({ type }: { type: Notification["type"] }) {
-  if (type === "assignment") return <UserCheck className="h-4 w-4 text-primary" />;
-  if (type === "completion") return <ClipboardCheck className="h-4 w-4 text-success" />;
+  if (type === "assignment_created") return <UserCheck className="h-4 w-4 text-primary" />;
+  if (type === "status_updated") return <ClipboardCheck className="h-4 w-4 text-success" />;
   return <AlertCircle className="h-4 w-4 text-danger" />;
 }
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const ref = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
 
-  const { data: assignments = [] } = useQuery({ queryKey: ["assignments"], queryFn: getAssignments });
-  const { data: needs = [] } = useQuery({ queryKey: ["needs"], queryFn: getNeeds });
+  const { data: notifications = [] } = useQuery({ 
+    queryKey: ["notifications"], 
+    queryFn: getNotifications,
+    refetchInterval: 30000, // Background polling 30s
+    refetchOnWindowFocus: true // Real-time UX on tab focus
+  });
 
-  const notifications = buildNotifications(assignments, needs);
-  const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
+  const unreadCount = notifications.filter((n: Notification) => !n.isRead).length;
 
   // Close on outside click
   useEffect(() => {
@@ -96,8 +54,27 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const markReadMutation = useMutation({
+    mutationFn: markNotificationAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    }
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: markAllNotificationsAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      toast.success("All notifications marked as read");
+    }
+  });
+
+  const handleMarkRead = (id: string, isRead: boolean) => {
+    if (!isRead) markReadMutation.mutate(id);
+  };
+
   const markAllRead = () => {
-    setReadIds(new Set(notifications.map(n => n.id)));
+    if (unreadCount > 0) markAllReadMutation.mutate();
   };
 
   return (
@@ -139,19 +116,18 @@ export default function NotificationBell() {
                 No notifications yet
               </div>
             ) : (
-              notifications.map(n => {
-                const isRead = readIds.has(n.id);
+              notifications.map((n: Notification) => {
                 return (
                   <div
-                    key={n.id}
-                    onClick={() => setReadIds(prev => new Set([...prev, n.id]))}
+                    key={n._id}
+                    onClick={() => handleMarkRead(n._id, n.isRead)}
                     className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-secondary/50 ${
-                      isRead ? "opacity-60" : ""
+                      n.isRead ? "opacity-60" : ""
                     }`}
                   >
                     <div className={`mt-0.5 p-1.5 rounded-lg ${
-                      n.type === "assignment" ? "bg-primary/10" :
-                      n.type === "completion" ? "bg-success/10" :
+                      n.type === "assignment_created" ? "bg-primary/10" :
+                      n.type === "status_updated" ? "bg-success/10" :
                       "bg-danger/10"
                     }`}>
                       <NotifIcon type={n.type} />
@@ -159,11 +135,11 @@ export default function NotificationBell() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-semibold">{n.title}</span>
-                        <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo(n.time)}</span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo(n.createdAt)}</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
                     </div>
-                    {!isRead && (
+                    {!n.isRead && (
                       <span className="mt-2 h-2 w-2 rounded-full bg-primary shrink-0" />
                     )}
                   </div>

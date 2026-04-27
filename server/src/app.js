@@ -9,6 +9,7 @@ import matchRoutes from './routes/matchRoutes.js';
 import assignmentsRoutes from './routes/assignmentsRoutes.js';
 import usersRoutes from './routes/usersRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import notificationsRoutes from './routes/notificationsRoutes.js';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use('/api/match', matchRoutes);
 app.use('/api/assignments', assignmentsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // Error Handling
 app.use(notFound);

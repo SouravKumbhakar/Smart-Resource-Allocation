@@ -1,4 +1,6 @@
 import User from '../models/User.js';
+import NGO from '../models/NGO.js';
+import AuditLog from '../models/AuditLog.js';
 import generateToken from '../utils/generateToken.js';
 import { successResponse, errorResponse } from '../utils/response.js';
 
@@ -7,41 +9,72 @@ import { successResponse, errorResponse } from '../utils/response.js';
 // @access  Public
 export const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, inviteCode, profile } = req.body;
 
     const userExists = await User.findOne({ email });
-
     if (userExists) {
       return errorResponse(res, 'User already exists', 400);
     }
 
-    // Security: public registration only allows 'volunteer' role.
-    // Admin/coordinator accounts must be created by an existing admin.
-    const SAFE_PUBLIC_ROLES = ['volunteer'];
-    const assignedRole = SAFE_PUBLIC_ROLES.includes(role) ? role : 'volunteer';
+    if (role === 'coordinator') {
+      return errorResponse(res, 'Coordinators must be provisioned by an NGO Admin.', 403);
+    }
+
+    let assignedRole = role || 'volunteer';
+    let status = 'active';
+
+    if (assignedRole === 'super_admin') {
+      if (inviteCode !== process.env.SUPER_ADMIN_SECRET) {
+        return errorResponse(res, 'Invalid admin invite code', 403);
+      }
+      status = 'active';
+    } else if (assignedRole === 'ngo_admin') {
+      status = 'pending';
+    } else if (assignedRole === 'volunteer') {
+      status = 'active';
+    } else {
+      assignedRole = 'volunteer';
+      status = 'active';
+    }
+
+    const userProfile = profile || {};
+    if (assignedRole === 'volunteer') {
+      userProfile.availability = true;
+      userProfile.completedCount = 0;
+    }
 
     const user = await User.create({
       name,
       email,
-      passwordHash: password, // Pre-save hook hashes it
-      role: assignedRole
+      passwordHash: password,
+      role: assignedRole,
+      status,
+      profile: userProfile
     });
 
-    if (assignedRole === 'volunteer') {
-      import('../models/Volunteer.js').then(({ default: Volunteer }) => {
-        Volunteer.create({
-          userId: user._id,
-          skills: [],
-          location: { lat: 0, lng: 0 },
-          availability: true,
-          completedCount: 0
-        }).catch(err => console.error('Failed to create volunteer profile:', err));
+    if (assignedRole === 'ngo_admin' && profile?.organizationName) {
+      const ngo = await NGO.create({
+        name: profile.organizationName,
+        location: profile.organizationLocation || 'Global',
+        contactNumber: profile.contactNumber || '',
+        adminId: user._id,
+        status: 'pending'
       });
+      user.profile.assignedNgoId = ngo._id;
+      await user.save();
     }
+
+    await AuditLog.create({
+      action: 'USER_REGISTERED',
+      performedBy: user._id,
+      targetModel: 'User',
+      targetId: user._id,
+      details: { role: assignedRole, status }
+    });
 
     if (user) {
       successResponse(res, {
-        user: { id: user._id, name: user.name, email: user.email, role: user.role },
+        user: { id: user._id, name: user.name, email: user.email, role: user.role, status: user.status },
         token: generateToken(user._id)
       }, 201);
     } else {
@@ -61,14 +94,22 @@ export const loginUser = async (req, res, next) => {
 
     const user = await User.findOne({ email });
 
-    if (user && (await user.matchPassword(password))) {
-      successResponse(res, {
-        user: { id: user._id, name: user.name, email: user.email, role: user.role },
-        token: generateToken(user._id)
-      });
-    } else {
-      errorResponse(res, 'Invalid email or password', 401);
+    if (!user || !(await user.matchPassword(password))) {
+      return errorResponse(res, 'Invalid email or password', 401);
     }
+
+    if (user.isDeleted) {
+      return errorResponse(res, 'Account disabled', 403);
+    }
+
+    if (user.status === 'suspended') {
+      return errorResponse(res, 'Account suspended. Contact support.', 403);
+    }
+
+    successResponse(res, {
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, status: user.status },
+      token: generateToken(user._id)
+    });
   } catch (error) {
     next(error);
   }

@@ -1,6 +1,6 @@
 import User from '../models/User.js';
 import Need from '../models/Need.js';
-import Volunteer from '../models/Volunteer.js';
+import NGO from '../models/NGO.js';
 import Assignment from '../models/Assignment.js';
 import AuditLog from '../models/AuditLog.js';
 import { successResponse, errorResponse } from '../utils/response.js';
@@ -20,20 +20,22 @@ export const logAction = async (action, performedBy, targetModel, targetId, deta
 export const getSystemStats = async (req, res, next) => {
   try {
     const [
-      totalUsers, totalNeeds, totalVolunteers, totalAssignments,
+      totalUsers, totalNeeds, totalVolunteersCount, totalAssignments,
       activeNeeds, completedAssignments, highPriorityNeeds,
       availableVolunteers, ngoAdmins,
     ] = await Promise.all([
       User.countDocuments(),
       Need.countDocuments(),
-      Volunteer.countDocuments(),
+      User.countDocuments({ role: 'volunteer', 'profile.availability': true }), // total volunteers is somewhat combined here
       Assignment.countDocuments(),
       Need.countDocuments({ status: 'open' }),
       Assignment.countDocuments({ status: 'completed' }),
       Need.countDocuments({ urgency: { $gte: 4 }, status: 'open' }),
-      Volunteer.countDocuments({ availability: true }),
+      User.countDocuments({ role: 'volunteer', 'profile.availability': true }),
       User.countDocuments({ role: 'ngo_admin' }),
     ]);
+
+    const totalVolunteers = totalVolunteersCount; // mapped correctly now
 
     const completionRate = totalAssignments > 0
       ? Math.round((completedAssignments / totalAssignments) * 100)
@@ -79,15 +81,17 @@ export const getAllUsers = async (req, res, next) => {
   try {
     const users = await User.find().select('-passwordHash').sort({ createdAt: -1 });
 
-    // Enrich volunteers with completedCount
-    const enriched = await Promise.all(users.map(async u => {
+    const enriched = users.map(u => {
       const userObj = u.toObject();
       if (u.role === 'volunteer') {
-        const vol = await Volunteer.findOne({ userId: u._id }).select('completedCount availability skills');
-        userObj.volunteerProfile = vol || null;
+        userObj.volunteerProfile = {
+          completedCount: u.profile?.completedCount || 0,
+          availability: u.profile?.availability || false,
+          skills: u.profile?.skills || []
+        };
       }
       return userObj;
-    }));
+    });
 
     successResponse(res, { data: enriched });
   } catch (error) {
@@ -141,15 +145,71 @@ export const deleteUser = async (req, res, next) => {
     const user = await User.findById(req.params.id);
     if (!user) return errorResponse(res, 'User not found', 404);
 
-    // Also clean up volunteer profile if exists
-    await Volunteer.deleteOne({ userId: user._id });
-    await user.deleteOne();
+    // Soft delete user instead of hard delete
+    user.isDeleted = true;
+    user.status = 'deleted';
+    await user.save();
 
     await logAction('DELETE_USER', req.user._id, 'User', user._id, {
       deletedEmail: user.email, deletedRole: user.role,
     });
 
     successResponse(res, { message: 'User deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update a user's status (approve/suspend)
+// @route   PATCH /api/admin/users/:id/status
+// @access  Super Admin
+export const updateUserStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const VALID_STATUSES = ['active', 'pending', 'suspended', 'deleted'];
+
+    if (!VALID_STATUSES.includes(status)) {
+      return errorResponse(res, `Invalid status: ${status}`, 400);
+    }
+
+    if (req.user._id.toString() === req.params.id) {
+      return errorResponse(res, 'You cannot change your own status', 400);
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return errorResponse(res, 'User not found', 404);
+
+    const previousStatus = user.status;
+    user.status = status;
+    if (status === 'deleted') user.isDeleted = true;
+    if (status === 'active') user.isDeleted = false;
+    await user.save();
+
+    // If approving NGO admin, also approve the NGO entity
+    if (user.role === 'ngo_admin' && status === 'active' && user.profile?.assignedNgoId) {
+      const ngo = await NGO.findById(user.profile.assignedNgoId);
+      if (ngo) {
+        ngo.status = 'active';
+        await ngo.save();
+        await logAction('NGO_APPROVED', req.user._id, 'NGO', ngo._id, { ngoName: ngo.name });
+      }
+    }
+
+    // If suspending NGO admin, suspend NGO
+    if (user.role === 'ngo_admin' && status === 'suspended' && user.profile?.assignedNgoId) {
+      const ngo = await NGO.findById(user.profile.assignedNgoId);
+      if (ngo) {
+        ngo.status = 'suspended';
+        await ngo.save();
+        await logAction('NGO_SUSPENDED', req.user._id, 'NGO', ngo._id, { ngoName: ngo.name });
+      }
+    }
+
+    await logAction('UPDATE_USER_STATUS', req.user._id, 'User', user._id, {
+      from: previousStatus, to: status, targetEmail: user.email,
+    });
+
+    successResponse(res, { data: { id: user._id, name: user.name, email: user.email, role: user.role, status: user.status } });
   } catch (error) {
     next(error);
   }
@@ -196,8 +256,8 @@ export const getNgoPerformance = async (req, res, next) => {
 
       const [totalNeeds, completedNeeds, activeNeeds, assignments] = await Promise.all([
         Promise.resolve(needs.length),
-        Need.countDocuments({ createdBy: admin._id, status: 'completed' }),
-        Need.countDocuments({ createdBy: admin._id, status: 'open' }),
+        Need.countDocuments({ ngoId: admin.profile?.assignedNgoId, status: 'completed' }),
+        Need.countDocuments({ ngoId: admin.profile?.assignedNgoId, status: 'open' }),
         Assignment.find({ needId: { $in: needIds } }).populate('needId', 'title'),
       ]);
 

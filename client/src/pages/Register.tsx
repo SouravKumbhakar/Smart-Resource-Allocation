@@ -12,7 +12,18 @@ import { register as registerApi, getNeeds } from "@/api";
 export default function Register() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "volunteer" });
+  const [formData, setFormData] = useState({ 
+    name: "", 
+    email: "", 
+    password: "", 
+    role: "volunteer",
+    inviteCode: "",
+    profile: {
+      organizationName: "",
+      organizationLocation: "",
+      contactNumber: ""
+    }
+  });
   const [nudge, setNudge] = useState<{ count: number; needIds: string[] } | null>(null);
 
   const { mutate: handleRegister, isPending } = useMutation({
@@ -108,10 +119,38 @@ export default function Register() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="volunteer">Volunteer</SelectItem>
+                <SelectItem value="ngo_admin">NGO Admin</SelectItem>
+                <SelectItem value="super_admin">Super Admin</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-[11px] text-muted-foreground">NGO Admin accounts are provisioned separately.</p>
+            {formData.role === 'ngo_admin' && (
+              <p className="text-[11px] text-muted-foreground">Your account will require Super Admin approval.</p>
+            )}
           </div>
+
+          {formData.role === 'ngo_admin' && (
+            <div className="space-y-4 pt-2 border-t border-border">
+              <div className="space-y-1.5">
+                <Label htmlFor="orgName">Organization Name</Label>
+                <Input id="orgName" required placeholder="Relief Org" value={formData.profile.organizationName} onChange={(e) => setFormData({...formData, profile: {...formData.profile, organizationName: e.target.value}})} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="orgLoc">Location (City, Country)</Label>
+                <Input id="orgLoc" required placeholder="New York, USA" value={formData.profile.organizationLocation} onChange={(e) => setFormData({...formData, profile: {...formData.profile, organizationLocation: e.target.value}})} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="orgPhone">Contact Number</Label>
+                <Input id="orgPhone" required placeholder="+1 234 567 890" value={formData.profile.contactNumber} onChange={(e) => setFormData({...formData, profile: {...formData.profile, contactNumber: e.target.value}})} />
+              </div>
+            </div>
+          )}
+
+          {formData.role === 'super_admin' && (
+            <div className="space-y-1.5 pt-2 border-t border-border">
+              <Label htmlFor="inviteCode">Admin Invite Code</Label>
+              <Input id="inviteCode" type="password" required placeholder="Secret Key" value={formData.inviteCode} onChange={(e) => setFormData({...formData, inviteCode: e.target.value})} />
+            </div>
+          )}
           <Button type="submit" disabled={isPending} className="w-full bg-gradient-primary text-primary-foreground hover:opacity-90">
             {isPending ? "Creating account…" : "Create account"}
           </Button>

@@ -33,6 +33,16 @@ export const authorize = (...roles) => {
   };
 };
 
+export const requireActive = (req, res, next) => {
+  if (req.user.isDeleted) {
+    return errorResponse(res, 'Account is disabled', 403);
+  }
+  if (req.user.status !== 'active') {
+    return errorResponse(res, `Account is ${req.user.status}. Please contact support.`, 403);
+  }
+  next();
+};
+
 // ── Convenience middleware ────────────────────────────────────────────────
 export const superAdminOnly = (req, res, next) => {
   if (req.user.role !== 'super_admin') {

@@ -1,5 +1,17 @@
 import Need from '../models/Need.js';
+import AuditLog from '../models/AuditLog.js';
 import { successResponse, errorResponse } from '../utils/response.js';
+
+const getTenantFilter = (user) => {
+  if (user.role === 'super_admin') return { isDeleted: false };
+  if (user.role === 'volunteer') return { isDeleted: false, status: 'open' };
+  
+  // Enforce isolation: NGO Admins/Coordinators can only query their own NGO
+  return { 
+    isDeleted: false, 
+    ngoId: user.profile?.assignedNgoId 
+  };
+};
 
 // @desc    Create a new need
 // @route   POST /api/needs
@@ -15,7 +27,8 @@ export const createNeed = async (req, res, next) => {
       location,
       urgency,
       peopleAffected,
-      createdBy: req.user._id
+      createdBy: req.user._id,
+      ngoId: req.user.profile?.assignedNgoId
     });
 
     successResponse(res, { data: need }, 201);
@@ -30,7 +43,13 @@ export const createNeed = async (req, res, next) => {
 export const getNeeds = async (req, res, next) => {
   try {
     const { sort, category, status, search } = req.query;
-    let query = {};
+    
+    // Strict NGO Isolation
+    let query = { ...getTenantFilter(req.user) };
+
+    if (!query.ngoId && req.user.role !== 'super_admin' && req.user.role !== 'volunteer') {
+      return errorResponse(res, 'User is not assigned to an NGO', 403);
+    }
 
     if (category && category !== 'All') {
       query.category = category.toLowerCase();
@@ -38,23 +57,29 @@ export const getNeeds = async (req, res, next) => {
     if (status && status !== 'All') {
       query.status = status.toLowerCase();
     }
-    // Full-text search across title and description
+    
+    // Full-text search using $text index
+    let sortObj = {};
     if (search && search.trim()) {
-      const regex = new RegExp(search.trim(), 'i');
-      query.$or = [{ title: regex }, { description: regex }];
+      query.$text = { $search: search.trim() };
+      sortObj = { score: { $meta: "textScore" } };
     }
 
-    let needsQuery = Need.find(query).populate('createdBy', 'name email');
+    let needsQuery = Need.find(query).populate('createdBy', 'name email').populate('ngoId', 'name');
 
-    if (sort === 'priority') {
-      needsQuery = needsQuery.sort({ priorityScore: -1 });
-    } else if (sort === 'urgency') {
-      needsQuery = needsQuery.sort({ urgency: -1 });
-    } else if (sort === 'peopleAffected') {
-      needsQuery = needsQuery.sort({ peopleAffected: -1 });
-    } else {
-      needsQuery = needsQuery.sort({ createdAt: -1 });
+    if (!search || !search.trim()) {
+      if (sort === 'priority') {
+        sortObj = { priorityScore: -1 };
+      } else if (sort === 'urgency') {
+        sortObj = { urgency: -1 };
+      } else if (sort === 'peopleAffected') {
+        sortObj = { peopleAffected: -1 };
+      } else {
+        sortObj = { createdAt: -1 };
+      }
     }
+    
+    needsQuery = needsQuery.sort(sortObj);
 
     const needs = await needsQuery;
     successResponse(res, { data: needs });
@@ -68,7 +93,8 @@ export const getNeeds = async (req, res, next) => {
 // @access  Private
 export const getNeedById = async (req, res, next) => {
   try {
-    const need = await Need.findById(req.params.id).populate('createdBy', 'name email');
+    const query = { _id: req.params.id, ...getTenantFilter(req.user) };
+    const need = await Need.findOne(query).populate('createdBy', 'name email').populate('ngoId', 'name');
 
     if (need) {
       successResponse(res, { data: need });
@@ -85,7 +111,8 @@ export const getNeedById = async (req, res, next) => {
 // @access  Private/NGO_Admin
 export const updateNeed = async (req, res, next) => {
   try {
-    const need = await Need.findById(req.params.id);
+    const query = { _id: req.params.id, ...getTenantFilter(req.user) };
+    const need = await Need.findOne(query);
 
     if (!need) {
       return errorResponse(res, 'Need not found', 404);
@@ -95,7 +122,7 @@ export const updateNeed = async (req, res, next) => {
     const isOwner = need.createdBy.toString() === req.user._id.toString();
     const isAdmin = ADMIN_ROLES.includes(req.user.role);
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isAdmin && req.user.role !== 'super_admin') {
       return errorResponse(res, 'Not authorized to update this need', 403);
     }
 
@@ -117,7 +144,8 @@ export const updateNeed = async (req, res, next) => {
 // @access  Private/NGO_Admin
 export const deleteNeed = async (req, res, next) => {
   try {
-    const need = await Need.findById(req.params.id);
+    const query = { _id: req.params.id, ...getTenantFilter(req.user) };
+    const need = await Need.findOne(query);
 
     if (!need) {
       return errorResponse(res, 'Need not found', 404);
@@ -127,11 +155,22 @@ export const deleteNeed = async (req, res, next) => {
     const isOwner = need.createdBy.toString() === req.user._id.toString();
     const isAdmin = ADMIN_ROLES.includes(req.user.role);
 
-    if (!isOwner && !isAdmin) {
+    if (!isOwner && !isAdmin && req.user.role !== 'super_admin') {
       return errorResponse(res, 'Not authorized to delete this need', 403);
     }
 
-    await need.deleteOne();
+    // Soft delete
+    need.isDeleted = true;
+    need.status = 'completed'; // or whatever soft delete implies logically
+    await need.save();
+    
+    await AuditLog.create({
+      action: 'NEED_SOFT_DELETED',
+      performedBy: req.user._id,
+      targetModel: 'Need',
+      targetId: need._id,
+      details: { title: need.title }
+    });
     successResponse(res, { message: 'Need removed' });
   } catch (error) {
     next(error);

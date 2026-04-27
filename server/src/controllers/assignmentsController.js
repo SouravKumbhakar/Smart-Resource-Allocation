@@ -1,6 +1,7 @@
 import Assignment from '../models/Assignment.js';
 import Need from '../models/Need.js';
-import Volunteer from '../models/Volunteer.js';
+import User from '../models/User.js';
+import Notification from '../models/Notification.js';
 import { getMatchesForNeed } from '../services/matchService.js';
 import { successResponse, errorResponse } from '../utils/response.js';
 import { logAction } from '../controllers/adminController.js';
@@ -18,13 +19,12 @@ export const createAssignment = async (req, res, next) => {
       return errorResponse(res, 'Need is already assigned or completed', 409);
     }
 
-    const volunteer = await Volunteer.findById(volunteerId);
-    if (!volunteer) return errorResponse(res, 'Volunteer not found', 404);
-    if (!volunteer.availability) {
+    const volunteer = await User.findById(volunteerId);
+    if (!volunteer || volunteer.role !== 'volunteer') return errorResponse(res, 'Volunteer not found', 404);
+    if (!volunteer.profile?.availability) {
       return errorResponse(res, 'Volunteer is not available', 409);
     }
 
-    // Get the score by running match again or receiving it from body, but best to recompute
     const matches = await getMatchesForNeed(needId);
     const matchData = matches.find(m => m.volunteerId.toString() === volunteerId);
 
@@ -32,7 +32,7 @@ export const createAssignment = async (req, res, next) => {
       needId,
       volunteerId,
       matchScore: matchData ? matchData.score : 0,
-      scoreBreakdown: matchData ? matchData.scoreBreakdown : {},
+      scoreBreakdown: matchData ? matchData.matchExplanation : [],
       status: 'active'
     });
 
@@ -40,10 +40,18 @@ export const createAssignment = async (req, res, next) => {
     need.status = 'assigned';
     await need.save();
 
-    volunteer.availability = false;
+    volunteer.profile.availability = false;
     await volunteer.save();
 
-    await logAction('CREATE_ASSIGNMENT', req.user._id, 'Assignment', assignment._id, {
+    await Notification.create({
+      userId: volunteer._id,
+      title: 'New Assignment',
+      message: `You have been assigned to: ${need.title}`,
+      type: 'assignment_created',
+      linkId: assignment._id
+    });
+
+    await logAction('ASSIGNMENT_CREATED', req.user._id, 'Assignment', assignment._id, {
       needTitle: need.title, volunteerId, matchScore: assignment.matchScore,
     });
 
@@ -58,12 +66,19 @@ export const createAssignment = async (req, res, next) => {
 // @access  Private
 export const getAssignments = async (req, res, next) => {
   try {
-    const assignments = await Assignment.find()
+    let query = {};
+    if (req.user.role === 'volunteer') {
+      query.volunteerId = req.user._id;
+    } else if (req.user.role === 'ngo_admin' || req.user.role === 'coordinator') {
+      // Find all needs belonging to this NGO
+      const needs = await Need.find({ ngoId: req.user.profile.assignedNgoId });
+      const needIds = needs.map(n => n._id);
+      query.needId = { $in: needIds };
+    }
+
+    const assignments = await Assignment.find(query)
       .populate('needId', 'title category status')
-      .populate({
-        path: 'volunteerId',
-        populate: { path: 'userId', select: 'name email' }
-      });
+      .populate('volunteerId', 'name email');
     
     successResponse(res, { data: assignments });
   } catch (error) {
@@ -84,16 +99,26 @@ export const completeAssignment = async (req, res, next) => {
     assignment.completedAt = Date.now();
     await assignment.save();
 
-    const need = await Need.findById(assignment.needId);
+    const need = await Need.findById(assignment.needId).populate('ngoId');
     if (need) {
       need.status = 'completed';
       await need.save();
+      
+      if (need.ngoId) {
+        await Notification.create({
+          userId: need.ngoId.adminId,
+          title: 'Task Completed',
+          message: `Volunteer finished task: ${need.title}`,
+          type: 'status_updated',
+          linkId: assignment._id
+        });
+      }
     }
 
-    const volunteer = await Volunteer.findById(assignment.volunteerId);
+    const volunteer = await User.findById(assignment.volunteerId);
     if (volunteer) {
-      volunteer.availability = true;
-      volunteer.completedCount += 1;
+      volunteer.profile.availability = true;
+      volunteer.profile.completedCount = (volunteer.profile.completedCount || 0) + 1;
       await volunteer.save();
     }
 

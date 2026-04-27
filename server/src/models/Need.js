@@ -24,8 +24,20 @@ const needSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
-  }
+  },
+  ngoId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'NGO',
+    required: true
+  },
+  isDeleted: { type: Boolean, default: false }
 }, { timestamps: true });
+
+// Performance Upgrade: Text Search Index
+needSchema.index({ title: 'text', description: 'text', category: 'text' });
+
+// Performance Upgrade: Compound Index for NGO Isolation
+needSchema.index({ ngoId: 1, isDeleted: 1 });
 
 // Pre-save hook to calculate priority score
 needSchema.pre('save', function () {

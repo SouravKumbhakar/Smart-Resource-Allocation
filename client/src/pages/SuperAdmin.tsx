@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAdminStats, getAdminUsers, updateUserRole, deleteAdminUser, getAuditLogs, getNgoPerformance } from "@/api";
+import { getAdminStats, getAdminUsers, updateUserRole, updateUserStatus, deleteAdminUser, getAuditLogs, getNgoPerformance } from "@/api";
 import { toast } from "sonner";
 import {
   ShieldCheck, Users, ClipboardList, CheckCircle, AlertTriangle,
@@ -59,6 +59,12 @@ export default function SuperAdmin() {
   const { mutate: changeRole } = useMutation({
     mutationFn: ({ id, role }: { id: string; role: string }) => updateUserRole(id, role),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-users"] }); toast.success("Role updated"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const { mutate: changeStatus } = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) => updateUserStatus(id, status),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-users"] }); toast.success("Status updated"); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -172,8 +178,17 @@ export default function SuperAdmin() {
                     {u.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{u.name}</div>
+                    <div className="text-sm font-medium truncate flex items-center gap-2">
+                      {u.name}
+                      {u.status === 'pending' && <Badge variant="outline" className="text-[10px] text-warning border-warning">Pending Approval</Badge>}
+                      {u.status === 'suspended' && <Badge variant="outline" className="text-[10px] text-danger border-danger">Suspended</Badge>}
+                    </div>
                     <div className="text-xs text-muted-foreground truncate">{u.email}</div>
+                    {u.role === 'ngo_admin' && u.profile?.organizationName && (
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        NGO: {u.profile.organizationName}
+                      </div>
+                    )}
                     {u.volunteerProfile && (
                       <div className="text-[11px] text-muted-foreground mt-0.5">
                         {u.volunteerProfile.completedCount} completed · {u.volunteerProfile.availability ? "Available" : "Unavailable"}
@@ -185,7 +200,7 @@ export default function SuperAdmin() {
                     value={u.role}
                     onValueChange={role => changeRole({ id: u._id, role })}
                   >
-                    <SelectTrigger className="w-[130px] h-8 text-xs">
+                    <SelectTrigger className="w-[110px] h-8 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -193,6 +208,19 @@ export default function SuperAdmin() {
                       <SelectItem value="ngo_admin">NGO Admin</SelectItem>
                       <SelectItem value="coordinator">Coordinator</SelectItem>
                       <SelectItem value="super_admin">Super Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={u.status}
+                    onValueChange={status => changeStatus({ id: u._id, status })}
+                  >
+                    <SelectTrigger className="w-[100px] h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="suspended">Suspend</SelectItem>
                     </SelectContent>
                   </Select>
                   <Button

@@ -16,12 +16,14 @@ export interface Need {
 
 export interface Volunteer {
   _id: string;
-  userId: { name: string; email: string };
-  skills: Category[];
-  availability: boolean;
-  location: { lat: number; lng: number };
-  completedCount: number;
-  avatar?: string;
+  name: string;
+  email: string;
+  profile: {
+    skills: Category[];
+    availability: boolean;
+    location: { lat: number; lng: number };
+    completedCount: number;
+  };
 }
 
 export interface Assignment {
@@ -40,6 +42,5 @@ export interface Match {
   volunteerName: string;
   score: number;
   distance: number;
-  scoreBreakdown: { skillScore: number; distanceScore: number; availabilityScore: number };
-  reasons: { skillMatch: boolean; distanceLabel: string; available: boolean };
+  matchExplanation: string[];
 }

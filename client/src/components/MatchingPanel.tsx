@@ -65,27 +65,25 @@ export function MatchingPanel({ need, matches }: { need: Need; matches: Match[] 
                     </TooltipTrigger>
                     <TooltipContent side="left" className="text-xs">
                       <div className="font-semibold mb-1">Why this score?</div>
-                      <div>Skill: +{m.scoreBreakdown.skillScore.toFixed(2)}</div>
-                      <div>Distance: +{m.scoreBreakdown.distanceScore.toFixed(2)}</div>
-                      <div>Availability: +{m.scoreBreakdown.availabilityScore.toFixed(2)}</div>
-                      <div className="border-t mt-1 pt-1 font-semibold">Total: {m.score.toFixed(2)} / 1.00</div>
+                      {m.matchExplanation.map((exp, i) => (
+                        <div key={i}>{exp}</div>
+                      ))}
+                      <div className="border-t mt-1 pt-1 font-semibold">Total: {m.score} / 100</div>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
 
               <div className="text-xs space-y-1 pl-12">
-                <div className="flex items-center gap-2">
-                  {m.reasons.skillMatch ? <CheckCircle2 className="h-3.5 w-3.5 text-success" /> : <XCircle className="h-3.5 w-3.5 text-danger" />}
-                  Skill {m.reasons.skillMatch ? "match" : "mismatch"} (+{m.scoreBreakdown.skillScore.toFixed(2)})
-                </div>
-                <div className="flex items-center gap-2">
-                  {m.distance < 5 ? <CheckCircle2 className="h-3.5 w-3.5 text-success" /> : <AlertTriangle className="h-3.5 w-3.5 text-warning" />}
-                  Distance: {m.reasons.distanceLabel} (+{m.scoreBreakdown.distanceScore.toFixed(2)})
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-success" /> Available now (+0.20)
-                </div>
+                {m.matchExplanation.map((exp, i) => {
+                  const isPositive = exp.startsWith('✅');
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      {isPositive ? <CheckCircle2 className="h-3.5 w-3.5 text-success" /> : <AlertTriangle className="h-3.5 w-3.5 text-warning" />}
+                      <span className={isPositive ? "" : "text-muted-foreground"}>{exp.substring(2)}</span>
+                    </div>
+                  );
+                })}
               </div>
 
               <AlertDialog>

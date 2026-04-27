@@ -1,17 +1,22 @@
 import Need from '../models/Need.js';
-import Volunteer from '../models/Volunteer.js';
+import User from '../models/User.js';
 import { getDistanceKm } from '../utils/distance.js';
 
 export const getMatchesForNeed = async (needId) => {
   const need = await Need.findById(needId);
   if (!need) throw new Error('Need not found');
 
-  // Find all volunteers who are currently available
-  const availableVolunteers = await Volunteer.find({ availability: true }).populate('userId', 'name email');
+  // Find all active volunteers who are currently available
+  const availableVolunteers = await User.find({
+    role: 'volunteer',
+    status: 'active',
+    isDeleted: false,
+    'profile.availability': true
+  });
 
   const matches = availableVolunteers.map(volunteer => {
     // 1. Calculate Distance Score
-    const distance = getDistanceKm(volunteer.location, need.location);
+    const distance = getDistanceKm(volunteer.profile.location, need.location);
     let distanceScore = 0;
     let distanceLabel = "> 10 km";
     if (distance < 2) {
@@ -26,30 +31,32 @@ export const getMatchesForNeed = async (needId) => {
     }
 
     // 2. Calculate Skill Score
-    const skillMatch = volunteer.skills.includes(need.category);
+    const skillMatch = volunteer.profile.skills.includes(need.category);
     const skillScore = skillMatch ? 0.50 : 0.00;
 
     // 3. Availability Score (already filtered for available = true)
     const availabilityScore = 0.20;
 
-    // Total Score
-    const totalScore = +(skillScore + distanceScore + availabilityScore).toFixed(2);
+    // Total Score (out of 1.00 => scaled to 100 later or kept as float)
+    const totalScoreFloat = skillScore + distanceScore + availabilityScore;
+    const totalScore = +(totalScoreFloat * 100).toFixed(0);
+
+    // Build the Explanation Layer
+    const matchExplanation = [];
+    if (skillMatch) {
+      matchExplanation.push(`✅ Matches required skill: ${need.category.toUpperCase()} (+50)`);
+    } else {
+      matchExplanation.push(`❌ Lacks required skill: ${need.category.toUpperCase()} (+0)`);
+    }
+    matchExplanation.push(`✅ Proximity: ${distanceLabel} (+${distanceScore * 100})`);
+    matchExplanation.push(`✅ Status: Currently Available (+20)`);
 
     return {
       volunteerId: volunteer._id,
-      volunteerName: volunteer.userId.name,
+      volunteerName: volunteer.name,
       score: totalScore,
       distance: +distance.toFixed(1),
-      scoreBreakdown: {
-        skillScore,
-        distanceScore,
-        availabilityScore
-      },
-      reasons: {
-        skillMatch,
-        distanceLabel,
-        available: true
-      }
+      matchExplanation
     };
   });
 

@@ -66,6 +66,11 @@ export const getAssignments   = ()               => fetchApi('/assignments', {},
 export const createAssignment = (data: any)      => fetchApi('/assignments/assign', { method: 'POST', body: JSON.stringify(data) }).then(res => res.data);
 export const completeAssignment = (id: string)   => fetchApi(`/assignments/assign/${id}/complete`, { method: 'PATCH' }).then(res => res.data);
 
+// ── Notifications ──────────────────────────────────────────────────────────
+export const getNotifications = () => fetchApi('/notifications', {}, true).then(res => res.data);
+export const markNotificationAsRead = (id: string) => fetchApi(`/notifications/${id}/read`, { method: 'PATCH' }, true).then(res => res.data);
+export const markAllNotificationsAsRead = () => fetchApi('/notifications/read-all', { method: 'PATCH' }, true).then(res => res.message);
+
 // ── Users (General) ────────────────────────────────────────────────────────
 export const getUsers = () => fetchApi('/users', {}, true).then(res => res.data);
 
@@ -73,6 +78,7 @@ export const getUsers = () => fetchApi('/users', {}, true).then(res => res.data)
 export const getAdminStats      = ()                          => fetchApi('/admin/stats', {}, true).then(res => res.data);
 export const getAdminUsers      = ()                          => fetchApi('/admin/users', {}, true).then(res => res.data);
 export const updateUserRole     = (id: string, role: string) => fetchApi(`/admin/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }).then(res => res.data);
+export const updateUserStatus   = (id: string, status: string) => fetchApi(`/admin/users/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }).then(res => res.data);
 export const deleteAdminUser    = (id: string)               => fetchApi(`/admin/users/${id}`, { method: 'DELETE' });
 export const getAuditLogs       = (page = 1)                 => fetchApi(`/admin/audit-logs?page=${page}&limit=20`, {}, true).then(res => res);
 export const getNgoPerformance  = ()                         => fetchApi('/admin/ngo-performance', {}, true).then(res => res.data);

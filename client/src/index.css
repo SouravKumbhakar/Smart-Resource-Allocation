@@ -128,7 +128,7 @@
 }
 
 /* Leaflet tweaks */
-.leaflet-container { font-family: 'Inter', sans-serif; border-radius: 14px; }
+.leaflet-container { font-family: 'Inter', sans-serif; border-radius: 14px; z-index: 10; }
 .leaflet-popup-content-wrapper { border-radius: 12px; }
 
 @keyframes pulse-ring {
