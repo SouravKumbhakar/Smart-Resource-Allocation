@@ -1,0 +1,87 @@
+# ============================================
+# ReliefOps — Monorepo Root .gitignore
+# Covers: Node.js | Vite | React | TypeScript
+# ============================================
+
+# ── Dependency directories ──────────────────
+node_modules/
+**/node_modules/
+jspm_packages/
+.yarn/
+.npm/
+
+# ── Build outputs ───────────────────────────
+dist/
+dist-ssr/
+build/
+out/
+**/dist/
+**/build/
+
+# ── Vite / bundler caches ───────────────────
+.vite/
+**/.vite/
+*.local
+
+# ── TypeScript build info ───────────────────
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# ── Environment variables (NEVER commit) ────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+client/.env
+server/.env
+
+# ── Logs ─────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ── Runtime / process files ──────────────────
+pids/
+*.pid
+*.seed
+*.pid.lock
+.node_repl_history
+
+# ── Test coverage ────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+
+# ── Linter / formatter caches ────────────────
+.eslintcache
+.stylelintcache
+.prettiercache
+
+# ── IDE / Editor ─────────────────────────────
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+
+# ── OS artifacts ─────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── Next.js (if ever added) ──────────────────
+.next/
+
+# ── Diagnostic reports ───────────────────────
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# ── Misc ─────────────────────────────────────
+typings/
