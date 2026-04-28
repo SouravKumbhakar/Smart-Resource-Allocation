@@ -42,7 +42,7 @@ export const createNeed = async (req, res, next) => {
 // @access  Private
 export const getNeeds = async (req, res, next) => {
   try {
-    const { sort, category, status, search } = req.query;
+    const { sort, category, status, search, includeCompleted } = req.query;
     
     // Strict NGO Isolation
     let query = { ...getTenantFilter(req.user) };
@@ -58,6 +58,15 @@ export const getNeeds = async (req, res, next) => {
       query.status = status.toLowerCase();
     }
     
+    // Auto-hide completed needs after 2 days unless specifically requested
+    if (!includeCompleted && query.status !== 'completed') {
+      const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+      query.$or = [
+        { status: { $ne: 'completed' } },
+        { status: 'completed', completedAt: { $gt: twoDaysAgo } }
+      ];
+    }
+    
     // Full-text search using $text index
     let sortObj = {};
     if (search && search.trim()) {
@@ -65,7 +74,10 @@ export const getNeeds = async (req, res, next) => {
       sortObj = { score: { $meta: "textScore" } };
     }
 
-    let needsQuery = Need.find(query).populate('createdBy', 'name email').populate('ngoId', 'name');
+    let needsQuery = Need.find(query)
+      .populate('createdBy', 'name email')
+      .populate('ngoId', 'name')
+      .populate('assignedVolunteerId', 'name');
 
     if (!search || !search.trim()) {
       if (sort === 'priority') {
@@ -94,7 +106,10 @@ export const getNeeds = async (req, res, next) => {
 export const getNeedById = async (req, res, next) => {
   try {
     const query = { _id: req.params.id, ...getTenantFilter(req.user) };
-    const need = await Need.findOne(query).populate('createdBy', 'name email').populate('ngoId', 'name');
+    const need = await Need.findOne(query)
+      .populate('createdBy', 'name email')
+      .populate('ngoId', 'name')
+      .populate('assignedVolunteerId', 'name');
 
     if (need) {
       successResponse(res, { data: need });

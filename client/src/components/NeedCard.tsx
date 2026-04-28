@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { CategoryBadge, PriorityBadge } from "./PriorityBadge";
+import { CategoryBadge, PriorityBadge, StatusBadge } from "./PriorityBadge";
 import type { Need } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +19,10 @@ export function NeedCard({ need }: { need: Need }) {
       )}
     >
       <div className="flex items-center justify-between">
-        <CategoryBadge category={need.category} />
+        <div className="flex items-center gap-2">
+          <CategoryBadge category={need.category} />
+          <StatusBadge status={need.status} assigneeName={need.assignedVolunteerId?.name} />
+        </div>
         <PriorityBadge urgency={need.urgency} />
       </div>
 
@@ -59,12 +62,14 @@ export function NeedCard({ need }: { need: Need }) {
       </TooltipProvider>
 
       <div className="flex gap-2 pt-1">
-        <Button asChild variant="secondary" size="sm" className="flex-1">
+        <Button asChild variant={need.status === 'open' ? "secondary" : "default"} size="sm" className="flex-1">
           <Link to={`/needs/${need._id}`}>View Details</Link>
         </Button>
-        <Button asChild size="sm" className="flex-1 bg-gradient-primary text-primary-foreground hover:opacity-90">
-          <Link to={`/needs/${need._id}`}>Quick Assign</Link>
-        </Button>
+        {need.status === 'open' && (
+          <Button asChild size="sm" className="flex-1 bg-gradient-primary text-primary-foreground hover:opacity-90">
+            <Link to={`/needs/${need._id}`}>Quick Assign</Link>
+          </Button>
+        )}
       </div>
     </div>
   );

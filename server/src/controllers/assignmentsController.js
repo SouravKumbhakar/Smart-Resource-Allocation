@@ -38,6 +38,7 @@ export const createAssignment = async (req, res, next) => {
 
     // Atomic update of need and volunteer
     need.status = 'assigned';
+    need.assignedVolunteerId = volunteerId;
     await need.save();
 
     volunteer.profile.availability = false;
@@ -102,6 +103,7 @@ export const completeAssignment = async (req, res, next) => {
     const need = await Need.findById(assignment.needId).populate('ngoId');
     if (need) {
       need.status = 'completed';
+      need.completedAt = Date.now();
       await need.save();
       
       if (need.ngoId) {

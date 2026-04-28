@@ -133,7 +133,7 @@ export default function NeedDetail() {
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <CategoryBadge category={need.category} />
               <PriorityBadge urgency={editing ? (editData.urgency ?? need.urgency) : need.urgency} />
-              <StatusBadge status={need.status} />
+              <StatusBadge status={need.status} assigneeName={need.assignedVolunteerId?.name} />
             </div>
 
             {editing ? (

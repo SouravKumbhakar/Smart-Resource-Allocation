@@ -37,16 +37,15 @@ export function CategoryBadge({ category }: { category: string }) {
   );
 }
 
-export function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    open: "bg-primary/10 text-primary",
-    assigned: "bg-warning/10 text-warning",
-    completed: "bg-success/10 text-success",
-    active: "bg-primary/10 text-primary",
-  };
-  return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize", map[status] ?? "bg-secondary")}>
-      {status}
-    </span>
-  );
+export function StatusBadge({ status, assigneeName }: { status: string; assigneeName?: string }) {
+  if (status === 'open') {
+    return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">Quick assign</span>;
+  }
+  if (status === 'assigned') {
+    return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-warning/10 text-warning border border-warning/20">Assigned {assigneeName ? `(${assigneeName})` : ''}</span>;
+  }
+  if (status === 'completed') {
+    return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-success/10 text-success border border-success/20">Completed</span>;
+  }
+  return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize bg-secondary">{status}</span>;
 }

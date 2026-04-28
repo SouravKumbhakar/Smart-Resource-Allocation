@@ -1,12 +1,16 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/PriorityBadge";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAssignments, completeAssignment as completeAssignmentApi } from "@/api";
+import { getAssignments, completeAssignment as completeAssignmentApi, getMe } from "@/api";
 
 export default function Assignments() {
   const queryClient = useQueryClient();
+  const { data: user } = useQuery({ queryKey: ["user"], queryFn: getMe, retry: false });
+  const isAdmin = user?.role === "ngo_admin" || user?.role === "coordinator" || user?.role === "super_admin";
+  
   const { data: list = [], isLoading } = useQuery({ queryKey: ["assignments"], queryFn: getAssignments });
 
   const { mutate: complete } = useMutation({
@@ -35,23 +39,28 @@ export default function Assignments() {
                 <th className="text-left px-3 py-3 font-medium">Score</th>
                 <th className="text-left px-3 py-3 font-medium">Assigned at</th>
                 <th className="text-left px-3 py-3 font-medium">Status</th>
-                <th className="px-5 py-3"></th>
+                <th className="px-5 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {list.map((a: any) => (
                 <tr key={a._id} className="hover:bg-secondary/30">
                   <td className="px-5 py-4 font-medium">{a.needId?.title || a.needTitle}</td>
-                  <td className="px-3 py-4">{a.volunteerId?.userId?.name || a.volunteerName}</td>
+                  <td className="px-3 py-4">{a.volunteerId?.name || a.volunteerName}</td>
                   <td className="px-3 py-4 font-semibold">{(a.matchScore ?? a.score ?? 0).toFixed(2)}</td>
-                  <td className="px-3 py-4 text-muted-foreground">{new Date(a.assignedAt).toLocaleString()}</td>
+                  <td className="px-3 py-4 text-muted-foreground">{new Date(a.createdAt || a.assignedAt).toLocaleString()}</td>
                   <td className="px-3 py-4"><StatusBadge status={a.status} /></td>
                   <td className="px-5 py-4 text-right">
-                    {a.status === "active" && (
-                      <Button size="sm" variant="outline" onClick={() => complete(a._id)}>
-                        Mark Complete
+                    <div className="flex justify-end gap-2">
+                      <Button asChild size="sm" variant="secondary">
+                        <Link to={`/needs/${a.needId?._id}`}>View Details</Link>
                       </Button>
-                    )}
+                      {isAdmin && a.status === "active" && (
+                        <Button size="sm" variant="default" onClick={() => complete(a._id)}>
+                          Mark Complete
+                        </Button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

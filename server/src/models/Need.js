@@ -20,6 +20,13 @@ const needSchema = new mongoose.Schema({
     enum: ['open', 'assigned', 'completed'],
     default: 'open'
   },
+  assignedVolunteerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  completedAt: {
+    type: Date
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

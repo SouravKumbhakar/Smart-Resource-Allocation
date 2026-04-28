@@ -1,31 +1,6 @@
-import Volunteer from '../models/Volunteer.js';
+import User from '../models/User.js';
 import { successResponse, errorResponse } from '../utils/response.js';
-
-// @desc    Create volunteer profile
-// @route   POST /api/volunteers
-// @access  Private/Volunteer
-export const createVolunteerProfile = async (req, res, next) => {
-  try {
-    const { skills, location, availability } = req.body;
-
-    const existingProfile = await Volunteer.findOne({ userId: req.user._id });
-
-    if (existingProfile) {
-      return errorResponse(res, 'Volunteer profile already exists', 400);
-    }
-
-    const volunteer = await Volunteer.create({
-      userId: req.user._id,
-      skills,
-      location,
-      availability
-    });
-
-    successResponse(res, { data: volunteer }, 201);
-  } catch (error) {
-    next(error);
-  }
-};
+import { calculateDistance } from '../utils/geo.js';
 
 // @desc    Get all volunteers
 // @route   GET /api/volunteers
@@ -33,16 +8,16 @@ export const createVolunteerProfile = async (req, res, next) => {
 export const getVolunteers = async (req, res, next) => {
   try {
     const { skill, available } = req.query;
-    let query = {};
+    let query = { role: 'volunteer', isDeleted: false };
 
     if (skill && skill !== 'All') {
-      query.skills = skill.toLowerCase();
+      query['profile.skills'] = skill.toLowerCase();
     }
     if (available && available !== 'All') {
-      query.availability = available === 'Available';
+      query['profile.availability'] = available === 'Available';
     }
 
-    const volunteers = await Volunteer.find(query).populate('userId', 'name email');
+    const volunteers = await User.find(query).select('-passwordHash');
     successResponse(res, { data: volunteers });
   } catch (error) {
     next(error);
@@ -54,7 +29,7 @@ export const getVolunteers = async (req, res, next) => {
 // @access  Private
 export const getVolunteerById = async (req, res, next) => {
   try {
-    const volunteer = await Volunteer.findById(req.params.id).populate('userId', 'name email');
+    const volunteer = await User.findOne({ _id: req.params.id, role: 'volunteer', isDeleted: false }).select('-passwordHash');
 
     if (volunteer) {
       successResponse(res, { data: volunteer });
@@ -71,24 +46,63 @@ export const getVolunteerById = async (req, res, next) => {
 // @access  Private
 export const updateVolunteerProfile = async (req, res, next) => {
   try {
-    const volunteer = await Volunteer.findById(req.params.id);
+    const volunteer = await User.findOne({ _id: req.params.id, role: 'volunteer', isDeleted: false });
 
     if (!volunteer) {
       return errorResponse(res, 'Volunteer not found', 404);
     }
 
     const ADMIN_ROLES = ['ngo_admin', 'coordinator'];
-    if (volunteer.userId.toString() !== req.user._id.toString() && !ADMIN_ROLES.includes(req.user.role)) {
+    if (volunteer._id.toString() !== req.user._id.toString() && !ADMIN_ROLES.includes(req.user.role)) {
       return errorResponse(res, 'Not authorized to update this profile', 403);
     }
 
-    const updatedVolunteer = await Volunteer.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    if (req.body.skills) volunteer.profile.skills = req.body.skills;
+    if (req.body.location) volunteer.profile.location = req.body.location;
+    if (req.body.availability !== undefined) volunteer.profile.availability = req.body.availability;
 
-    successResponse(res, { data: updatedVolunteer });
+    await volunteer.save();
+
+    successResponse(res, { data: volunteer });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get nearby volunteers sorted by distance
+// @route   GET /api/volunteers/nearby
+// @access  Private
+export const getNearbyVolunteers = async (req, res, next) => {
+  try {
+    const { lat, lng } = req.query;
+    
+    if (!lat || !lng) {
+      return errorResponse(res, 'Latitude and Longitude are required', 400);
+    }
+
+    const targetLat = parseFloat(lat);
+    const targetLng = parseFloat(lng);
+
+    const volunteers = await User.find({ 
+      role: 'volunteer', 
+      isDeleted: false,
+      status: 'active',
+      'profile.location.lat': { $exists: true },
+      'profile.location.lng': { $exists: true }
+    }).select('-passwordHash');
+
+    const volunteersWithDistance = volunteers.map(v => {
+      const vObj = v.toObject();
+      const distance = calculateDistance(
+        targetLat, targetLng,
+        v.profile.location.lat, v.profile.location.lng
+      );
+      return { ...vObj, distance };
+    });
+
+    volunteersWithDistance.sort((a, b) => a.distance - b.distance);
+
+    successResponse(res, { data: volunteersWithDistance });
   } catch (error) {
     next(error);
   }

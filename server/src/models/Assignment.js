@@ -8,7 +8,7 @@ const assignmentSchema = new mongoose.Schema({
   },
   volunteerId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Volunteer',
+    ref: 'User',
     required: true
   },
   matchScore: { type: Number },

@@ -7,18 +7,25 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CategoryBadge } from "@/components/PriorityBadge";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getVolunteers, updateVolunteer } from "@/api";
+import { getVolunteers, updateVolunteer, getNearbyVolunteers } from "@/api";
+import { Button } from "@/components/ui/button";
+import { Navigation } from "lucide-react";
 
 export default function Volunteers() {
   const [q, setQ] = useState("");
   const [skill, setSkill] = useState("all");
   const [avail, setAvail] = useState("all");
+  const [location, setLocation] = useState<{lat: number, lng: number} | null>(null);
 
   const queryClient = useQueryClient();
-  const { data: list = [], isLoading } = useQuery({ queryKey: ["volunteers"], queryFn: getVolunteers });
+  
+  const { data: list = [], isLoading } = useQuery({ 
+    queryKey: ["volunteers", location], 
+    queryFn: () => location ? getNearbyVolunteers(location.lat, location.lng) : getVolunteers() 
+  });
 
   const { mutate: toggle } = useMutation({
-    mutationFn: (volunteer: any) => updateVolunteer(volunteer._id, { availability: !volunteer.availability }),
+    mutationFn: (volunteer: any) => updateVolunteer(volunteer._id, { availability: !volunteer.profile?.availability }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["volunteers"] });
       toast.success("Availability updated");
@@ -26,18 +33,44 @@ export default function Volunteers() {
     onError: (err: any) => toast.error(err.message || "Failed to update availability")
   });
 
+  const handleUseLocation = () => {
+    if ("geolocation" in navigator) {
+      toast.info("Finding your location...");
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (err) => {
+          toast.error("Could not get location. Falling back to default.");
+          setLocation({ lat: 22.5726, lng: 88.3639 }); // Fallback to Kolkata
+        }
+      );
+    } else {
+      toast.error("Geolocation not supported");
+    }
+  };
+
   const filtered = useMemo(() =>
     list.filter((v: any) =>
-      (skill === "all" || v.skills.includes(skill)) &&
-      (avail === "all" || (avail === "yes" ? v.availability : !v.availability)) &&
-      (q === "" || (v.userId?.name || v.name || "").toLowerCase().includes(q.toLowerCase()))
+      (skill === "all" || v.profile?.skills?.includes(skill)) &&
+      (avail === "all" || (avail === "yes" ? v.profile?.availability : !v.profile?.availability)) &&
+      (q === "" || (v.name || "").toLowerCase().includes(q.toLowerCase()))
     ), [list, q, skill, avail]);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Volunteers</h1>
-        <p className="text-sm text-muted-foreground mt-1">{filtered.length} volunteers in network.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Volunteers</h1>
+          <p className="text-sm text-muted-foreground mt-1">{filtered.length} volunteers in network.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {location && (
+             <Button variant="ghost" size="sm" onClick={() => setLocation(null)}>Clear Location</Button>
+          )}
+          <Button onClick={handleUseLocation} size="sm" variant={location ? "default" : "outline"} className="gap-2">
+            <Navigation className="h-4 w-4" />
+            {location ? "Showing Nearby" : "Find Nearby"}
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3 rounded-2xl bg-card border shadow-card p-4">
@@ -67,9 +100,10 @@ export default function Volunteers() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((v: any) => {
-          const name = v.userId?.name || v.name || 'Unknown';
+          const name = v.name || 'Unknown';
+          const isAvail = v.profile?.availability;
           return (
-          <div key={v._id} className="rounded-2xl bg-card border shadow-card p-5 hover:shadow-elevated transition-shadow">
+          <div key={v._id} className="rounded-2xl bg-card border shadow-card p-5 hover:shadow-elevated transition-shadow relative">
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12">
                 <AvatarFallback className="bg-gradient-primary text-primary-foreground font-semibold">
@@ -79,20 +113,23 @@ export default function Volunteers() {
               <div className="flex-1 min-w-0">
                 <div className="font-semibold flex items-center gap-2">
                   {name}
-                  <span className={`h-2 w-2 rounded-full ${v.availability ? "bg-success animate-pulse" : "bg-muted-foreground/50"}`} />
+                  <span className={`h-2 w-2 rounded-full ${isAvail ? "bg-success animate-pulse" : "bg-muted-foreground/50"}`} />
                 </div>
-                <div className="text-xs text-muted-foreground">{v.availability ? "Available" : "Unavailable"}</div>
+                <div className="text-xs text-muted-foreground">{v.email}</div>
               </div>
-              <Switch checked={v.availability} onCheckedChange={() => toggle(v)} />
+              <Switch checked={isAvail} onCheckedChange={() => toggle(v)} />
             </div>
 
             <div className="flex flex-wrap gap-1.5 mt-4">
-              {v.skills.map((s) => <CategoryBadge key={s} category={s} />)}
+              {v.profile?.skills?.map((s: string) => <CategoryBadge key={s} category={s} />)}
             </div>
 
             <div className="flex items-center justify-between mt-4 pt-4 border-t text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> Kolkata region</span>
-              <span><span className="font-bold text-foreground">{v.completedCount ?? 0}</span> completed</span>
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5" /> 
+                {v.distance !== undefined ? `${v.distance.toFixed(1)} km away` : 'Location unknown'}
+              </span>
+              <span><span className="font-bold text-foreground">{v.profile?.completedCount ?? 0}</span> completed</span>
             </div>
           </div>
           );

@@ -11,6 +11,8 @@ export interface Need {
   priorityScore: number;
   status: NeedStatus;
   location: { lat: number; lng: number };
+  assignedVolunteerId?: { _id: string; name: string };
+  completedAt?: string;
   createdAt: string;
 }
 

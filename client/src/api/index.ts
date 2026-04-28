@@ -56,8 +56,8 @@ export const deleteNeed  = (id: string)     => fetchApi(`/needs/${id}`, { method
 
 // ── Volunteers ─────────────────────────────────────────────────────────────
 export const getVolunteers         = ()                  => fetchApi('/volunteers', {}, true).then(res => res.data);
+export const getNearbyVolunteers   = (lat: number, lng: number) => fetchApi(`/volunteers/nearby?lat=${lat}&lng=${lng}`, {}, true).then(res => res.data);
 export const getVolunteerById      = (id: string)        => fetchApi(`/volunteers/${id}`, {}, true).then(res => res.data);
-export const createVolunteerProfile = (data: any)        => fetchApi('/volunteers', { method: 'POST', body: JSON.stringify(data) }).then(res => res.data);
 export const updateVolunteer       = (id: string, data: any) => fetchApi(`/volunteers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }).then(res => res.data);
 
 // ── Match & Assignments ────────────────────────────────────────────────────

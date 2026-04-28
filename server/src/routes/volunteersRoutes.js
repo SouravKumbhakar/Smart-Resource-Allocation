@@ -1,11 +1,12 @@
 import express from 'express';
-import { createVolunteerProfile, getVolunteers, getVolunteerById, updateVolunteerProfile } from '../controllers/volunteersController.js';
-import { protect, authorize } from '../middleware/auth.js';
+import { getVolunteers, getVolunteerById, updateVolunteerProfile, getNearbyVolunteers } from '../controllers/volunteersController.js';
+import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 
+router.get('/nearby', protect, getNearbyVolunteers);
+
 router.route('/')
-  .post(protect, authorize('volunteer'), createVolunteerProfile)
   .get(protect, getVolunteers);
 
 router.route('/:id')
