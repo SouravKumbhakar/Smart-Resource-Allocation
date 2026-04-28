@@ -22,10 +22,13 @@ export function PriorityBadge({ urgency }: { urgency: number }) {
 }
 
 const catMap: Record<string, { label: string; emoji: string; cls: string }> = {
-  food:      { label: "Food",      emoji: "🍞", cls: "bg-amber-100 text-amber-800" },
-  medical:   { label: "Medical",   emoji: "🏥", cls: "bg-rose-100 text-rose-800" },
-  education: { label: "Education", emoji: "📚", cls: "bg-sky-100 text-sky-800" },
-  disaster:  { label: "Disaster",  emoji: "⚡", cls: "bg-violet-100 text-violet-800" },
+  food:        { label: "Food",        emoji: "🍞", cls: "bg-amber-100 text-amber-800" },
+  medical:     { label: "Medical",     emoji: "🏥", cls: "bg-rose-100 text-rose-800" },
+  education:   { label: "Education",   emoji: "📚", cls: "bg-sky-100 text-sky-800" },
+  disaster:    { label: "Disaster",    emoji: "⚡", cls: "bg-violet-100 text-violet-800" },
+  logistics:   { label: "Logistics",   emoji: "🚛", cls: "bg-yellow-100 text-yellow-800" },
+  shelter:     { label: "Shelter",     emoji: "🏠", cls: "bg-green-100 text-green-800" },
+  counselling: { label: "Counselling", emoji: "🤝", cls: "bg-pink-100 text-pink-800" },
 };
 
 export function CategoryBadge({ category }: { category: string }) {
@@ -38,13 +41,19 @@ export function CategoryBadge({ category }: { category: string }) {
 }
 
 export function StatusBadge({ status, assigneeName }: { status: string; assigneeName?: string }) {
-  if (status === 'open') {
+  if (status === "open") {
     return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20">Quick assign</span>;
   }
-  if (status === 'assigned') {
-    return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-warning/10 text-warning border border-warning/20">Assigned {assigneeName ? `(${assigneeName})` : ''}</span>;
+  if (status === "assigned") {
+    return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-warning/10 text-warning border border-warning/20">Assigned {assigneeName ? `(${assigneeName})` : ""}</span>;
   }
-  if (status === 'completed') {
+  if (status === "active") {
+    return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">Active</span>;
+  }
+  if (status === "submitted") {
+    return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">⏳ Pending Review</span>;
+  }
+  if (status === "completed") {
     return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold bg-success/10 text-success border border-success/20">Completed</span>;
   }
   return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize bg-secondary">{status}</span>;

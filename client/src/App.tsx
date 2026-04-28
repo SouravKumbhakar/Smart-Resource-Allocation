@@ -15,6 +15,8 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import SuperAdmin from "./pages/SuperAdmin";
 import NotFound from "./pages/NotFound";
+import ProfileComplete from "./pages/ProfileComplete";
+import AssignmentDetail from "./pages/AssignmentDetail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +40,7 @@ const App = () => (
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/profile/complete" element={<ProfileComplete />} />
 
           {/* Protected routes — requires JWT token */}
           <Route element={<ProtectedRoute />}>
@@ -47,6 +50,7 @@ const App = () => (
               <Route path="/needs/:id" element={<NeedDetail />} />
               <Route path="/volunteers" element={<Volunteers />} />
               <Route path="/assignments" element={<Assignments />} />
+              <Route path="/assignments/:id" element={<AssignmentDetail />} />
               <Route path="/profile" element={<Profile />} />
               
               {/* Super Admin routes */}

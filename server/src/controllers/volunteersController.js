@@ -47,26 +47,25 @@ export const getVolunteerById = async (req, res, next) => {
 export const updateVolunteerProfile = async (req, res, next) => {
   try {
     const volunteer = await User.findOne({ _id: req.params.id, role: 'volunteer', isDeleted: false });
-
-    if (!volunteer) {
-      return errorResponse(res, 'Volunteer not found', 404);
-    }
+    if (!volunteer) return errorResponse(res, 'Volunteer not found', 404);
 
     const ADMIN_ROLES = ['ngo_admin', 'coordinator'];
     if (volunteer._id.toString() !== req.user._id.toString() && !ADMIN_ROLES.includes(req.user.role)) {
       return errorResponse(res, 'Not authorized to update this profile', 403);
     }
 
-    if (req.body.skills) volunteer.profile.skills = req.body.skills;
+    // Structured skills [{name, description}]
+    if (req.body.skills !== undefined) volunteer.profile.skills = req.body.skills;
     if (req.body.location) volunteer.profile.location = req.body.location;
     if (req.body.availability !== undefined) volunteer.profile.availability = req.body.availability;
+    if (req.body.contactNumber !== undefined) volunteer.profile.contactNumber = req.body.contactNumber;
+    if (req.body.address !== undefined) volunteer.profile.address = req.body.address;
+    if (req.body.city !== undefined) volunteer.profile.city = req.body.city;
+    if (req.body.profileComplete !== undefined) volunteer.profile.profileComplete = req.body.profileComplete;
 
     await volunteer.save();
-
     successResponse(res, { data: volunteer });
-  } catch (error) {
-    next(error);
-  }
+  } catch (error) { next(error); }
 };
 
 // @desc    Get nearby volunteers sorted by distance

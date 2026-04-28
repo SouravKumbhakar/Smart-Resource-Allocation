@@ -19,11 +19,17 @@ const assignmentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'completed'],
+    enum: ['active', 'submitted', 'completed'],
     default: 'active'
   },
-  assignedAt: { type: Date, default: Date.now },
-  completedAt: { type: Date }
+  assignedAt:    { type: Date, default: Date.now },
+  completedAt:   { type: Date },
+  submission: {
+    text:        { type: String },
+    images:      [{ type: String }],
+    submittedAt: { type: Date }
+  },
+  adminFeedback: { type: String }
 }, { timestamps: true });
 
 export default mongoose.model('Assignment', assignmentSchema);

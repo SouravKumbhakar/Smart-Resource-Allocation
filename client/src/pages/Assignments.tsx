@@ -10,7 +10,7 @@ export default function Assignments() {
   const queryClient = useQueryClient();
   const { data: user } = useQuery({ queryKey: ["user"], queryFn: getMe, retry: false });
   const isAdmin = user?.role === "ngo_admin" || user?.role === "coordinator" || user?.role === "super_admin";
-  
+
   const { data: list = [], isLoading } = useQuery({ queryKey: ["assignments"], queryFn: getAssignments });
 
   const { mutate: complete } = useMutation({
@@ -43,21 +43,33 @@ export default function Assignments() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {list.map((a: any) => (
+              {isLoading ? (
+                <tr><td colSpan={6} className="text-center py-10 text-muted-foreground">Loading…</td></tr>
+              ) : list.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-10 text-muted-foreground">No assignments yet.</td></tr>
+              ) : list.map((a: any) => (
                 <tr key={a._id} className="hover:bg-secondary/30">
                   <td className="px-5 py-4 font-medium">{a.needId?.title || a.needTitle}</td>
                   <td className="px-3 py-4">{a.volunteerId?.name || a.volunteerName}</td>
-                  <td className="px-3 py-4 font-semibold">{(a.matchScore ?? a.score ?? 0).toFixed(2)}</td>
-                  <td className="px-3 py-4 text-muted-foreground">{new Date(a.createdAt || a.assignedAt).toLocaleString()}</td>
+                  <td className="px-3 py-4 font-semibold">{(a.matchScore ?? a.score ?? 0).toFixed(0)}</td>
+                  <td className="px-3 py-4 text-muted-foreground">{new Date(a.createdAt || a.assignedAt).toLocaleDateString()}</td>
                   <td className="px-3 py-4"><StatusBadge status={a.status} /></td>
                   <td className="px-5 py-4 text-right">
                     <div className="flex justify-end gap-2">
+                      {/* View Details — always links to /assignments/:id, never broken */}
                       <Button asChild size="sm" variant="secondary">
-                        <Link to={`/needs/${a.needId?._id}`}>View Details</Link>
+                        <Link to={`/assignments/${a._id}`}>View Details</Link>
                       </Button>
+                      {/* Admin: direct complete for active */}
                       {isAdmin && a.status === "active" && (
                         <Button size="sm" variant="default" onClick={() => complete(a._id)}>
                           Mark Complete
+                        </Button>
+                      )}
+                      {/* Admin: review submitted */}
+                      {isAdmin && a.status === "submitted" && (
+                        <Button asChild size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                          <Link to={`/assignments/${a._id}`}>Review</Link>
                         </Button>
                       )}
                     </div>

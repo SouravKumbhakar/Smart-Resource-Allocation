@@ -17,11 +17,18 @@ const userSchema = new mongoose.Schema({
   },
   isDeleted: { type: Boolean, default: false },
   profile: {
-    skills: [{ type: String }],
-    location: { lat: Number, lng: Number },
-    availability: { type: Boolean, default: true },
+    contactNumber:   { type: String },
+    address:         { type: String },
+    city:            { type: String },
+    skills: [{
+      name:        { type: String },
+      description: { type: String, maxlength: 600 }
+    }],
+    location:       { lat: Number, lng: Number },
+    availability:   { type: Boolean, default: true },
     completedCount: { type: Number, default: 0 },
-    assignedNgoId: { type: mongoose.Schema.Types.ObjectId, ref: 'NGO' }
+    assignedNgoId:  { type: mongoose.Schema.Types.ObjectId, ref: 'NGO' },
+    profileComplete: { type: Boolean, default: false }
   }
 }, { timestamps: true });
 

@@ -12,45 +12,33 @@ export const registerUser = async (req, res, next) => {
     const { name, email, password, role, inviteCode, profile } = req.body;
 
     const userExists = await User.findOne({ email });
-    if (userExists) {
-      return errorResponse(res, 'User already exists', 400);
-    }
+    if (userExists) return errorResponse(res, 'User already exists', 400);
 
-    if (role === 'coordinator') {
-      return errorResponse(res, 'Coordinators must be provisioned by an NGO Admin.', 403);
-    }
+    if (role === 'coordinator') return errorResponse(res, 'Coordinators must be provisioned by an NGO Admin.', 403);
 
     let assignedRole = role || 'volunteer';
     let status = 'active';
 
     if (assignedRole === 'super_admin') {
-      if (inviteCode !== process.env.SUPER_ADMIN_SECRET) {
-        return errorResponse(res, 'Invalid admin invite code', 403);
-      }
-      status = 'active';
+      if (inviteCode !== process.env.SUPER_ADMIN_SECRET) return errorResponse(res, 'Invalid admin invite code', 403);
     } else if (assignedRole === 'ngo_admin') {
       status = 'pending';
-    } else if (assignedRole === 'volunteer') {
-      status = 'active';
     } else {
-      assignedRole = 'volunteer';
-      status = 'active';
+      assignedRole = assignedRole === 'volunteer' ? 'volunteer' : 'volunteer';
     }
 
     const userProfile = profile || {};
     if (assignedRole === 'volunteer') {
       userProfile.availability = true;
       userProfile.completedCount = 0;
+      userProfile.profileComplete = false;
+      // Persist contact info from top-level body fields too
+      if (req.body.contactNumber) userProfile.contactNumber = req.body.contactNumber;
+      if (req.body.address) userProfile.address = req.body.address;
+      if (req.body.city) userProfile.city = req.body.city;
     }
 
-    const user = await User.create({
-      name,
-      email,
-      passwordHash: password,
-      role: assignedRole,
-      status,
-      profile: userProfile
-    });
+    const user = await User.create({ name, email, passwordHash: password, role: assignedRole, status, profile: userProfile });
 
     if (assignedRole === 'ngo_admin' && profile?.organizationName) {
       const ngo = await NGO.create({

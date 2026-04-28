@@ -82,3 +82,32 @@ export const updateUserStatus   = (id: string, status: string) => fetchApi(`/adm
 export const deleteAdminUser    = (id: string)               => fetchApi(`/admin/users/${id}`, { method: 'DELETE' });
 export const getAuditLogs       = (page = 1)                 => fetchApi(`/admin/audit-logs?page=${page}&limit=20`, {}, true).then(res => res);
 export const getNgoPerformance  = ()                         => fetchApi('/admin/ngo-performance', {}, true).then(res => res.data);
+
+// ── Assignment Detail & Workflow ───────────────────────────────────────────
+export const getAssignmentById  = (id: string)               => fetchApi(`/assignments/${id}`, {}, true).then(res => res.data);
+export const submitAssignment   = (id: string, data: { text: string; images: string[] }) =>
+  fetchApi(`/assignments/${id}/submit`, { method: 'PATCH', body: JSON.stringify(data) }).then(res => res.data);
+export const approveAssignment  = (id: string)               => fetchApi(`/assignments/${id}/approve`, { method: 'PATCH' }).then(res => res.data);
+export const rejectAssignment   = (id: string, feedback: string) =>
+  fetchApi(`/assignments/${id}/reject`, { method: 'PATCH', body: JSON.stringify({ feedback }) }).then(res => res.data);
+
+// ── File Upload ────────────────────────────────────────────────────────────
+export const uploadFile = async (file: File): Promise<string> => {
+  const token = localStorage.getItem('token');
+  const formData = new FormData();
+  formData.append('image', file);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const res = await fetch(`${API_URL}/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Upload failed');
+  return data.url as string;
+};
+
+// ── Volunteer Profile Update ──────────────────────────────────────────────
+export const updateMyProfile = (id: string, data: any) =>
+  fetchApi(`/volunteers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }).then(res => res.data);
+

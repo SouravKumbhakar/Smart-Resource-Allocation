@@ -18,6 +18,9 @@ export default function Register() {
     password: "", 
     role: "volunteer",
     inviteCode: "",
+    contactNumber: "",
+    address: "",
+    city: "",
     profile: {
       organizationName: "",
       organizationLocation: "",
@@ -113,6 +116,23 @@ export default function Register() {
             <Label htmlFor="pw">Password</Label>
             <Input id="pw" type="password" required placeholder="••••••••" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
           </div>
+          {formData.role === 'volunteer' && (
+            <div className="space-y-4 pt-2 border-t border-border">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Contact Details</p>
+              <div className="space-y-1.5">
+                <Label htmlFor="phone">Contact Number</Label>
+                <Input id="phone" placeholder="+91 98765 43210" value={formData.contactNumber} onChange={(e) => setFormData({...formData, contactNumber: e.target.value})} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="city">City</Label>
+                <Input id="city" placeholder="Mumbai" value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="address">Address</Label>
+                <Input id="address" placeholder="123 Relief Road, Mumbai" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
+              </div>
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label>Role</Label>
             <Select value={formData.role} onValueChange={(val) => setFormData({...formData, role: val})}>

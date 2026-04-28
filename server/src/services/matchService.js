@@ -30,8 +30,9 @@ export const getMatchesForNeed = async (needId) => {
       distanceLabel = "< 10 km";
     }
 
-    // 2. Calculate Skill Score
-    const skillMatch = volunteer.profile.skills.includes(need.category);
+    // 2. Calculate Skill Score — skills are now {name, description} objects
+    const skillNames = (volunteer.profile.skills || []).map(s => (typeof s === 'string' ? s : s.name).toLowerCase());
+    const skillMatch = skillNames.includes(need.category.toLowerCase());
     const skillScore = skillMatch ? 0.50 : 0.00;
 
     // 3. Availability Score (already filtered for available = true)
