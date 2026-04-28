@@ -17,18 +17,21 @@ import notificationsRoutes from './routes/notificationsRoutes.js';
 const app = express();
 
 // ── CORS ────────────────────────────────────────────────────────────────────
-const allowedOrigins = [
-  process.env.CLIENT_URL,       // set in Render env → your Vercel URL
-  'http://localhost:5173',
-  'http://localhost:8080',
-].filter(Boolean);
+// Allows: production Vercel URL, ALL Vercel preview deployments, localhost
+const VERCEL_PATTERN = /^https:\/\/smart-resource-allocation[a-z0-9-]*\.vercel\.app$/;
+const LOCAL_ORIGINS  = ['http://localhost:5173', 'http://localhost:8080'];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // No origin = server-to-server, curl, Render health pings → allow
+    // No origin = curl / Render health checks / server-to-server → allow
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    // Return a proper CORS error (don't throw — Express 5 won't catch it)
+    // Explicit production URL from env var
+    if (process.env.CLIENT_URL && origin === process.env.CLIENT_URL) return callback(null, true);
+    // Any Vercel preview deployment for this project
+    if (VERCEL_PATTERN.test(origin)) return callback(null, true);
+    // Local dev
+    if (LOCAL_ORIGINS.includes(origin)) return callback(null, true);
+    // Block everything else
     return callback(null, false);
   },
   credentials: true,
