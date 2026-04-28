@@ -1,6 +1,9 @@
+// ── Load env FIRST so process.env.CLIENT_URL is available immediately ──
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/authRoutes.js';
 import needsRoutes from './routes/needsRoutes.js';
@@ -11,34 +14,39 @@ import usersRoutes from './routes/usersRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import notificationsRoutes from './routes/notificationsRoutes.js';
 
-dotenv.config();
-
 const app = express();
 
-// Middleware
+// ── CORS ────────────────────────────────────────────────────────────────────
 const allowedOrigins = [
-  process.env.CLIENT_URL,          // e.g. https://smart-resource-allocation-theta.vercel.app
+  process.env.CLIENT_URL,       // set in Render env → your Vercel URL
   'http://localhost:5173',
   'http://localhost:8080',
 ].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    // allow requests with no origin (mobile apps, curl, Render health checks)
+    // No origin = server-to-server, curl, Render health pings → allow
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS: origin ${origin} not allowed`));
+    // Return a proper CORS error (don't throw — Express 5 won't catch it)
+    return callback(null, false);
   },
   credentials: true,
 }));
+
 app.use(express.json());
 
-// Base Health Route
-app.get('/health', (req, res) => {
+// ── Root route (Render uptime check hits GET /) ──────────────────────────────
+app.get('/', (_req, res) => {
+  res.status(200).json({ status: 'OK', service: 'ReliefOps API' });
+});
+
+// ── Health check ─────────────────────────────────────────────────────────────
+app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'OK', message: 'Smart Resource Allocation API is running' });
 });
 
-// Routes
+// ── API Routes ────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/needs', needsRoutes);
 app.use('/api/volunteers', volunteersRoutes);
@@ -48,7 +56,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationsRoutes);
 
-// Error Handling
+// ── Error Handling ────────────────────────────────────────────────────────────
 app.use(notFound);
 app.use(errorHandler);
 
