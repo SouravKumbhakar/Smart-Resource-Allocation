@@ -110,10 +110,6 @@ ReliefOps is a comprehensive resource intelligence platform designed to streamli
 
 ## 👥 Contributors
 
-* **Your Name** - [GitHub](https://github.com/yourusername)
+* **Sourav Kumbhakar** 
 
 ---
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
