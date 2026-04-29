@@ -44,5 +44,6 @@ export interface Match {
   volunteerName: string;
   score: number;
   distance: number;
+  skills: any[];
   matchExplanation: string[];
 }

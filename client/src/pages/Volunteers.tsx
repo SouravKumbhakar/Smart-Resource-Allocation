@@ -10,6 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getVolunteers, updateVolunteer, getNearbyVolunteers } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Navigation } from "lucide-react";
+import { SKILL_OPTIONS } from "@/lib/constants";
 
 export default function Volunteers() {
   const [q, setQ] = useState("");
@@ -50,7 +51,7 @@ export default function Volunteers() {
 
   const filtered = useMemo(() =>
     list.filter((v: any) =>
-      (skill === "all" || v.profile?.skills?.includes(skill)) &&
+      (skill === "all" || (v.profile?.skills || []).some((s: any) => s.name === skill)) &&
       (avail === "all" || (avail === "yes" ? v.profile?.availability : !v.profile?.availability)) &&
       (q === "" || (v.name || "").toLowerCase().includes(q.toLowerCase()))
     ), [list, q, skill, avail]);
@@ -82,10 +83,9 @@ export default function Volunteers() {
           <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All skills</SelectItem>
-            <SelectItem value="food">Food</SelectItem>
-            <SelectItem value="medical">Medical</SelectItem>
-            <SelectItem value="education">Education</SelectItem>
-            <SelectItem value="disaster">Disaster</SelectItem>
+            {SKILL_OPTIONS.map(s => (
+              <SelectItem key={s.name} value={s.name}>{s.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={avail} onValueChange={setAvail}>
@@ -121,7 +121,7 @@ export default function Volunteers() {
             </div>
 
             <div className="flex flex-wrap gap-1.5 mt-4">
-              {v.profile?.skills?.map((s: string) => <CategoryBadge key={s} category={s} />)}
+              {(v.profile?.skills || []).map((s: any) => <CategoryBadge key={s.name} category={s.name} />)}
             </div>
 
             <div className="flex items-center justify-between mt-4 pt-4 border-t text-xs text-muted-foreground">

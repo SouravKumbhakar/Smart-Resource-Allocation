@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMe, updateProfile } from "@/api";
@@ -7,15 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { CheckCircle2, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 
-const SKILL_OPTIONS = [
-  { name: "food",        label: "Food & Nutrition",  icon: "🍽️", color: "bg-orange-500/15 border-orange-500/40 text-orange-300" },
-  { name: "medical",     label: "Medical Aid",        icon: "🏥", color: "bg-red-500/15 border-red-500/40 text-red-300" },
-  { name: "education",   label: "Education",          icon: "📚", color: "bg-blue-500/15 border-blue-500/40 text-blue-300" },
-  { name: "logistics",   label: "Logistics",          icon: "🚛", color: "bg-yellow-500/15 border-yellow-500/40 text-yellow-300" },
-  { name: "disaster",    label: "Disaster Relief",    icon: "🆘", color: "bg-purple-500/15 border-purple-500/40 text-purple-300" },
-  { name: "shelter",     label: "Shelter & Housing",  icon: "🏠", color: "bg-green-500/15 border-green-500/40 text-green-300" },
-  { name: "counselling", label: "Counselling",        icon: "🤝", color: "bg-pink-500/15 border-pink-500/40 text-pink-300" },
-];
+import { SKILL_OPTIONS } from "@/lib/constants";
 
 export default function ProfileComplete() {
   const navigate = useNavigate();
@@ -24,6 +16,18 @@ export default function ProfileComplete() {
   const [step, setStep] = useState(1);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (user?.profile?.skills) {
+      const skills = user.profile.skills.map((s: any) => s.name);
+      const descs: Record<string, string> = {};
+      user.profile.skills.forEach((s: any) => {
+        descs[s.name] = s.description || "";
+      });
+      setSelectedSkills(skills);
+      setDescriptions(descs);
+    }
+  }, [user]);
 
   const { mutate: saveProfile, isPending } = useMutation({
     mutationFn: () => {

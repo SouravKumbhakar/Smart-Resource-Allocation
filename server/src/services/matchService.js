@@ -57,6 +57,7 @@ export const getMatchesForNeed = async (needId) => {
       volunteerName: volunteer.name,
       score: totalScore,
       distance: +distance.toFixed(1),
+      skills: volunteer.profile.skills,
       matchExplanation
     };
   });

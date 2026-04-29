@@ -78,6 +78,8 @@ export const updateAvailability = (availability: boolean) =>
 export const updateProfile = (data: any) => 
   fetchApi('/users/profile', { method: 'PATCH', body: JSON.stringify(data) }).then(res => res.data);
 
+export const getStats = () => fetchApi('/stats', {}, true).then(res => res.data);
+
 // ── Super Admin API ────────────────────────────────────────────────────────
 export const getAdminStats      = ()                          => fetchApi('/admin/stats', {}, true).then(res => res.data);
 export const getAdminUsers      = ()                          => fetchApi('/admin/users', {}, true).then(res => res.data);

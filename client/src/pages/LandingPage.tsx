@@ -1,18 +1,19 @@
 import { useNavigate, Link } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion, useScroll, useSpring } from "framer-motion";
 import { 
   Shield, ArrowRight, CheckCircle2, Users, Heart, 
   MapPin, Zap, Layout, Globe, Github, Menu, X 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getStats } from "@/api";
 
-const IMPACT_STATS = [
-  { label: "People Helped", value: "50,000+", icon: Heart, color: "text-red-500" },
-  { label: "Volunteers Connected", value: "12,000+", icon: Users, color: "text-blue-500" },
-  { label: "NGOs Connected", value: "450+", icon: Globe, color: "text-green-500" },
-  { label: "Tasks Completed", value: "85,000+", icon: CheckCircle2, color: "text-purple-500" },
+const IMPACT_CONFIG = [
+  { key: "peopleHelped",    label: "People Helped",        icon: Heart,          color: "text-red-500" },
+  { key: "volunteersCount", label: "Volunteers Connected", icon: Users,          color: "text-blue-500" },
+  { key: "ngosCount",       label: "NGOs Connected",       icon: Globe,          color: "text-green-500" },
+  { key: "tasksCompleted",  label: "Tasks Completed",      icon: CheckCircle2,   color: "text-purple-500" },
 ];
 
 const HOW_IT_WORKS = [
@@ -45,6 +46,12 @@ export default function LandingPage() {
       navigate("/dashboard");
     }
   }, [navigate]);
+
+  const { data: stats } = useQuery({ 
+    queryKey: ["stats"], 
+    queryFn: getStats,
+    refetchInterval: 30000 // Refresh every 30s
+  });
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-primary/20">
@@ -135,20 +142,27 @@ export default function LandingPage() {
       <section className="py-16 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {IMPACT_STATS.map((stat, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="text-center p-6 rounded-2xl bg-white border shadow-sm"
-              >
-                <stat.icon className={`h-8 w-8 mx-auto mb-4 ${stat.color}`} />
-                <h3 className="text-3xl font-bold text-slate-900 mb-1">{stat.value}</h3>
-                <p className="text-sm text-slate-500 font-medium">{stat.label}</p>
-              </motion.div>
-            ))}
+            {IMPACT_CONFIG.map((stat, i) => {
+              const rawValue = stats ? stats[stat.key] : 0;
+              const displayValue = rawValue >= 1000 ? `${(rawValue / 1000).toFixed(1)}k+` : rawValue;
+              
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="text-center p-6 rounded-2xl bg-white border shadow-sm"
+                >
+                  <stat.icon className={`h-8 w-8 mx-auto mb-4 ${stat.color}`} />
+                  <h3 className="text-3xl font-bold text-slate-900 mb-1">
+                    {stats ? displayValue : "..."}
+                  </h3>
+                  <p className="text-sm text-slate-500 font-medium">{stat.label}</p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
