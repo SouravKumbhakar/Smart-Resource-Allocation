@@ -1,182 +1,113 @@
-# ReliefOps — Smart Resource Allocation Platform
+# Smart Resource Allocation – ReliefOps Platform 🛡️
 
-> **Data-driven volunteer coordination for social impact.**  
-> A full-stack web application that collects, prioritizes, and manages community needs — then intelligently matches them to available volunteers using a multi-factor scoring algorithm.
+**Connecting Communities with Relief Through Technology**
 
----
-
-## 🏗️ Folder Structure
-
-```
-smart-resource-allocation/
-├── client/          # React 18 + Vite frontend (TypeScript)
-│   ├── src/
-│   │   ├── api/         # Centralized API layer (fetch wrappers)
-│   │   ├── components/  # Shared UI components
-│   │   ├── hooks/       # Custom React hooks
-│   │   ├── lib/         # Utility helpers
-│   │   └── pages/       # Route-level page components
-│   ├── public/          # Static assets
-│   ├── index.html
-│   ├── vite.config.ts
-│   └── package.json
-│
-├── server/          # Node.js + Express REST API
-│   ├── src/
-│   │   ├── config/      # Database connection
-│   │   ├── controllers/ # Route handler logic
-│   │   ├── jobs/        # Scheduled cron tasks
-│   │   ├── middleware/  # Auth, error handling
-│   │   ├── models/      # Mongoose ODM schemas
-│   │   ├── routes/      # Express route definitions
-│   │   ├── services/    # Business logic (matching engine)
-│   │   └── utils/       # Shared helpers
-│   ├── seeder.js        # Database seed script
-│   └── package.json
-│
-├── .gitignore       # Root-level (covers entire monorepo)
-└── README.md
-```
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge)](https://smart-resource-allocation-theta.vercel.app/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 ---
 
-## 🚀 Tech Stack
+## 🚨 The Problem: Crisis Coordination Gap
 
-### Frontend (`/client`)
-| Technology | Purpose |
-|---|---|
-| React 18 + Vite | UI framework & build tool |
-| TypeScript | Static typing |
-| TanStack Query | Server state management & caching |
-| React Router v6 | Client-side routing |
-| Tailwind CSS + Shadcn UI | Styling & accessible components |
-| React Leaflet | Interactive map views |
-| Recharts | Data visualization / KPI charts |
-| Sonner | Toast notifications |
+In the wake of humanitarian crises or ongoing community challenges, organizations often struggle with:
+* **Fragmented Data**: Community needs are scattered across different channels, making it hard to prioritize.
+* **Invisible Urgency**: High-priority problems are often buried under less critical requests.
+* **Inefficient Matching**: Manually connecting volunteers to tasks based on skills and location is slow and error-prone.
 
-### Backend (`/server`)
-| Technology | Purpose |
-|---|---|
-| Node.js + Express 5 | HTTP server & REST API |
-| MongoDB Atlas + Mongoose | Database & ODM |
-| JWT (jsonwebtoken) | Stateless authentication |
-| bcryptjs | Password hashing |
-| node-cron | Scheduled urgency updates |
-| express-rate-limit | API abuse protection |
+## 💡 The Solution: ReliefOps
+
+ReliefOps is a comprehensive resource intelligence platform designed to streamline humanitarian efforts. It provides a centralized command center where NGOs can report needs, and an intelligent engine matches those needs with the right volunteers based on **proximity, skills, and availability**.
 
 ---
 
-## 💻 Getting Started
+## 🚀 Key Features
 
-### Prerequisites
-- **Node.js** v18+
-- **MongoDB Atlas** account (or local MongoDB instance)
+### 🔐 Multi-Role RBAC System
+* **Super Admin**: Platform-wide governance, user role management, and audit monitoring.
+* **NGO Admin**: Post community needs, manage organization profiles, and oversee local operations.
+* **Coordinator**: Match volunteers to urgent needs and verify task completion.
+* **Volunteer**: Build skill profiles, discover local opportunities, and submit proof of impact.
 
----
+### 🧠 Smart & Automated Intelligence
+* **Matching Engine**: Proprietary algorithm that scores volunteers based on skill relevance, distance (Haversine formula), and current workload.
+* **Location-based Discovery**: Real-time discovery of nearby volunteers for hyper-local response.
+* **Skill Profiling**: Dynamic profiling system allowing volunteers to showcase specific expertise (Medical, Logistics, Food, etc.).
 
-### 1. Backend Setup
-
-```bash
-cd server
-npm install
-```
-
-Create a `.env` file inside `server/`:
-
-```env
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_strong_jwt_secret
-CLIENT_URL=http://localhost:8080
-```
-
-Seed the database with sample data (optional):
-
-```bash
-node src/seeder.js
-```
-
-Start the development server:
-
-```bash
-npm run dev
-```
-
-The API will be running at `http://localhost:5000`.
+### 📈 Operational Excellence
+* **Verification Workflow**: Volunteers submit proof-of-work (images + text), which admins review before marking tasks as completed.
+* **Real-Time Notifications**: Integrated system to keep all stakeholders informed of assignments and approvals.
+* **Audit Logging**: Comprehensive tracking of all critical system actions for transparency and accountability.
+* **Automated Cleanup**: Intelligence system that auto-hides completed tasks after 48 hours to keep the dashboard focused.
 
 ---
 
-### 2. Frontend Setup
+## 🛠️ Tech Stack
 
-```bash
-cd client
-npm install
-```
+### Frontend
+* **Core**: React 18, TypeScript
+* **State Management**: TanStack Query (React Query)
+* **Routing**: React Router DOM
+* **Styling**: Tailwind CSS, Shadcn/UI
+* **Animations**: Framer Motion
 
-Create a `.env` file inside `client/`:
-
-```env
-VITE_API_URL=http://localhost:5000/api
-```
-
-Start the development server:
-
-```bash
-npm run dev
-```
-
-The app will be available at `http://localhost:8080`.
+### Backend
+* **Runtime**: Node.js, Express
+* **Database**: MongoDB (Mongoose ODM)
+* **Authentication**: JWT (JSON Web Tokens)
+* **File Handling**: Cloudinary SDK
 
 ---
 
-## 🔐 Default Admin Credentials
+## 🌐 Live Demo & Credentials
 
-| Field | Value |
-|---|---|
-| Email | `admin@aidops.org` |
-| Password | `123456` |
+**Frontend**: [https://smart-resource-allocation-theta.vercel.app/](https://smart-resource-allocation-theta.vercel.app/)
 
-> ⚠️ **Change these credentials before deploying to production.**
+### 🔑 Demo Login Credentials
 
----
-
-## 🧠 Matching Algorithm
-
-The volunteer matching engine scores candidates on three weighted factors:
-
-| Factor | Weight | Logic |
-|---|---|---|
-| **Skill match** | 50% | Volunteer has the skill matching the need's category |
-| **Proximity** | 30% | Haversine distance — full points if within 2 km |
-| **Availability** | 20% | Volunteer is currently marked as available |
-
-Top 5 matches are returned, sorted by score then distance.
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **Super Admin** | `superadmin@aidops.org` | `123456` |
+| **NGO Admin** | `admin@aidops.org` | `123456` |
+| **Volunteer** | `john@mail.com` | `123456` |
 
 ---
 
-## 📡 API Endpoints
+## 📸 Screenshots
 
-| Method | Path | Description | Access |
-|---|---|---|---|
-| POST | `/api/auth/register` | Register new user | Public |
-| POST | `/api/auth/login` | Login & receive JWT | Public |
-| GET | `/api/auth/me` | Get current user | Private |
-| GET | `/api/needs` | List all needs | Private |
-| POST | `/api/needs` | Create a need | Admin |
-| GET | `/api/needs/:id` | Get single need | Private |
-| GET | `/api/volunteers` | List volunteers | Private |
-| POST | `/api/match/:needId` | Get volunteer matches | Admin |
-| GET | `/api/assignments` | List assignments | Private |
-| POST | `/api/assignments/assign` | Create assignment | Admin |
-| PATCH | `/api/assignments/assign/:id/complete` | Mark complete | Admin/Volunteer |
-| GET | `/api/users` | List all users | Admin |
+*(Placeholders – Add your actual screenshots here)*
+
+<div align="center">
+  <img src="https://via.placeholder.com/800x450?text=Landing+Page" alt="Landing Page" width="400" />
+  <img src="https://via.placeholder.com/800x450?text=Admin+Dashboard" alt="Admin Dashboard" width="400" />
+</div>
 
 ---
 
-## 🌱 Contributing
+## 🏗️ System Architecture
 
-This project was built as a hackathon prototype. PRs and issues are welcome.
+1. **Client Layer**: A responsive React SPA that interacts with the RESTful API.
+2. **Security Layer**: JWT-based middleware ensuring Role-Based Access Control (RBAC) across all endpoints.
+3. **Logic Layer**: Node.js services handling geo-spatial calculations, matching algorithms, and state transitions.
+4. **Data Layer**: MongoDB storing persistent documents for Users, Needs, Assignments, and Audit Logs.
+5. **Storage Layer**: Cloudinary managing image uploads for task verification.
 
 ---
 
-*Built with ❤️ to support humanitarian coordination.*
+## 🔭 Future Scope
+
+* **AI Chatbot**: Instant assistance for volunteers to find tasks.
+* **Mobile App**: Native iOS/Android apps with push notifications and GPS tracking.
+* **Offline Mode**: Local caching of data for use in areas with poor connectivity.
+* **Blockchain Integration**: Immutable proof of impact for donor transparency.
+
+---
+
+## 👥 Contributors
+
+* **Your Name** - [GitHub](https://github.com/yourusername)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
