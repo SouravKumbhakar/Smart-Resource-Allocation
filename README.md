@@ -74,11 +74,17 @@ ReliefOps is a comprehensive resource intelligence platform designed to streamli
 
 ## 📸 Screenshots
 
-*(Placeholders – Add your actual screenshots here)*
+
+
 
 <div align="center">
-  <img src="https://via.placeholder.com/800x450?text=Landing+Page" alt="Landing Page" width="400" />
-  <img src="https://via.placeholder.com/800x450?text=Admin+Dashboard" alt="Admin Dashboard" width="400" />
+  <img width="400"  alt="Landing page" src="https://github.com/user-attachments/assets/2cff7cbf-790b-4146-88c1-2cc61b2161ca" />
+  <img width="400" alt="Admin pannel" src="https://github.com/user-attachments/assets/4ca3afc1-183c-47fc-8592-526ac59ccc37" />
+  <img width="400"  alt="NGO dashboard" src="https://github.com/user-attachments/assets/b65e67e8-c93b-44aa-b06f-693779eb2546" />
+  <img width="400"  alt="Needs page" src="https://github.com/user-attachments/assets/980cba40-b818-421e-a519-e4c9d5b137b9" />
+  <img  width="400"  alt="Volunteers" src="https://github.com/user-attachments/assets/f3f032e2-7261-47f3-8800-93941f721eb7" />
+  <img width="400" alt="assignments page"" src="https://github.com/user-attachments/assets/ad9a8c2e-0ad8-4092-840d-4ec8f0809b85" />
+  <img width="400" alt="volunteer profile" src="https://github.com/user-attachments/assets/82679c45-0011-4c20-bad2-1517363169c6" />
 </div>
 
 ---
