@@ -17,6 +17,7 @@ import SuperAdmin from "./pages/SuperAdmin";
 import NotFound from "./pages/NotFound";
 import ProfileComplete from "./pages/ProfileComplete";
 import AssignmentDetail from "./pages/AssignmentDetail";
+import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,11 +42,12 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/profile/complete" element={<ProfileComplete />} />
+          <Route path="/" element={<LandingPage />} />
 
           {/* Protected routes — requires JWT token */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/needs" element={<Needs />} />
               <Route path="/needs/:id" element={<NeedDetail />} />
               <Route path="/volunteers" element={<Volunteers />} />

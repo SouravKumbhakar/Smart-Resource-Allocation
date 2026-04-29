@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getMe, updateMyProfile } from "@/api";
+import { getMe, updateProfile } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -31,12 +31,12 @@ export default function ProfileComplete() {
         name,
         description: descriptions[name] || "",
       }));
-      return updateMyProfile(user.id, { skills, profileComplete: true });
+      return updateProfile({ skills, profileComplete: true });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user"] });
       toast.success("Profile completed! Welcome to ReliefOps 🎉");
-      navigate("/");
+      navigate("/dashboard");
     },
     onError: (err: any) => toast.error(err.message || "Failed to save profile"),
   });
@@ -176,7 +176,7 @@ export default function ProfileComplete() {
 
         <p className="text-center text-xs text-muted-foreground mt-4">
           You can update your skills anytime from your profile page.
-          <button onClick={() => navigate("/")} className="text-primary ml-1 underline underline-offset-2">
+          <button onClick={() => navigate("/dashboard")} className="text-primary ml-1 underline underline-offset-2">
             Skip for now
           </button>
         </p>

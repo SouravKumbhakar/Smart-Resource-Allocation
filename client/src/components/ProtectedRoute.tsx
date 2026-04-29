@@ -20,7 +20,7 @@ export function RoleRoute({ allowedRoles }: { allowedRoles: string[] }) {
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading access rules...</div>;
   
   if (!user || !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;

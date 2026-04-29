@@ -48,7 +48,7 @@ export default function Register() {
           // If needs fetch fails, just navigate normally
         }
       }
-      navigate("/");
+      navigate("/dashboard");
     },
     onError: (err: any) => {
       toast.error(err.message || "Registration failed");
@@ -82,7 +82,7 @@ export default function Register() {
             >
               View Needs
             </Button>
-            <Button variant="outline" className="flex-1" onClick={() => navigate("/")}>
+            <Button variant="outline" className="flex-1" onClick={() => navigate("/dashboard")}>
               Go to Dashboard
             </Button>
           </div>

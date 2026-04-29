@@ -10,7 +10,7 @@ import { getMe } from "@/api";
 import NotificationBell from "@/components/NotificationBell";
 
 const nav = [
-  { to: "/",           label: "Dashboard",  icon: LayoutDashboard, end: true },
+  { to: "/dashboard",   label: "Dashboard",  icon: LayoutDashboard, end: true },
   { to: "/needs",      label: "Needs",       icon: ClipboardList },
   { to: "/volunteers", label: "Volunteers",  icon: Users },
   { to: "/assignments",label: "Assignments", icon: Link2 },

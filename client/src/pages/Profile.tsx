@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getMe, updateMyProfile } from "@/api";
+import { getMe, updateAvailability, updateProfile } from "@/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +36,7 @@ export default function Profile() {
   };
 
   const { mutate: saveBasic, isPending: saving } = useMutation({
-    mutationFn: () => updateMyProfile(user.id, form),
+    mutationFn: () => updateProfile(form),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user"] });
       toast.success("Profile updated!");
@@ -46,9 +46,23 @@ export default function Profile() {
   });
 
   const { mutate: toggleAvailability } = useMutation({
-    mutationFn: (val: boolean) => updateMyProfile(user.id, { availability: val }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user"] }),
-    onError: (e: any) => toast.error(e.message),
+    mutationFn: (val: boolean) => updateAvailability(val),
+    onMutate: async (newVal) => {
+      await queryClient.cancelQueries({ queryKey: ["user"] });
+      const previousUser = queryClient.getQueryData(["user"]);
+      queryClient.setQueryData(["user"], (old: any) => ({
+        ...old,
+        profile: { ...old.profile, availability: newVal }
+      }));
+      return { previousUser };
+    },
+    onError: (err: any, newVal, context: any) => {
+      queryClient.setQueryData(["user"], context.previousUser);
+      toast.error(err.message || "Failed to update availability");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
   });
 
   if (isLoading) return <div className="p-8"><Skeleton className="h-[400px] w-full rounded-2xl" /></div>;

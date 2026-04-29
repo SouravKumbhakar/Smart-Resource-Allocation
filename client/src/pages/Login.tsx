@@ -17,7 +17,7 @@ export default function Login() {
     onSuccess: (data: any) => {
       localStorage.setItem("token", data.token); // Save token
       toast.success("Welcome back!");
-      navigate("/"); // Navigate to dashboard
+      navigate("/dashboard"); // Navigate to dashboard
     },
     onError: (err: any) => {
       toast.error(err.message || "Invalid credentials");

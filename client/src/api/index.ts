@@ -73,6 +73,10 @@ export const markAllNotificationsAsRead = () => fetchApi('/notifications/read-al
 
 // ── Users (General) ────────────────────────────────────────────────────────
 export const getUsers = () => fetchApi('/users', {}, true).then(res => res.data);
+export const updateAvailability = (availability: boolean) => 
+  fetchApi('/users/availability', { method: 'PATCH', body: JSON.stringify({ availability }) }).then(res => res.data);
+export const updateProfile = (data: any) => 
+  fetchApi('/users/profile', { method: 'PATCH', body: JSON.stringify(data) }).then(res => res.data);
 
 // ── Super Admin API ────────────────────────────────────────────────────────
 export const getAdminStats      = ()                          => fetchApi('/admin/stats', {}, true).then(res => res.data);
